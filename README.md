@@ -16,6 +16,12 @@ scripts/setup.sh          # reprovision after a container rebuild
 Chromium's system libraries live in the **container rootfs, not `$HOME`** — a
 rebuild wipes them and the browser will fail to launch until reinstalled.
 
+**If the repository or `.venv` has been moved:** recreate the virtualenv before
+running setup. Virtualenv console scripts embed an absolute Python path. As of
+2026-09-30, the checked-in workspace's `.venv/bin/pip` still points to the old
+`~/workspace/concurrer/.venv/bin/python3` location and cannot run; this is
+tracked as immediate repair work in `~/canon/workbook/tasks.md`.
+
 Credentials come from `~/.config/concur/secrets.env` (mode 600):
 
 ```
@@ -53,8 +59,25 @@ the browser closes, so all work must happen inside `authenticated_context()`,
 the same browser that authenticated. A second process gets Duo trust but not the
 session.
 
-Use `PushApprover`, never `PasscodeApprover` — the latter calls `input()` and
-hangs forever with no terminal.
+Use `PushApprover` by default. This box has no controlling terminal, so a
+plain `PasscodeApprover` cannot be used here — it calls `input()`. The rebuilt
+environment currently has `duo-pass` 0.0.2, whose injectable passcode source is
+available but has not been integrated or behaviorally tested by concurrer.
+
+### Blocking banners
+
+Login inspects supported blocking banners and stops with their visible text and
+choices by default; it never silently accepts consent or privacy preferences.
+After reviewing a notice, provide one explicit response for that invocation:
+
+```bash
+.venv/bin/python -m concurrer.edit ... --banner-action trustarc=Understood
+```
+
+Responses must match both a known banner ID and its current visible action text.
+For the observed TrustArc notice, the choices are `Understood`, `Manage
+Settings`, and `Cookie Statement`. Choosing `Manage Settings` exposes the next
+state for review rather than making any further preference selection.
 
 ## Safety model
 
@@ -89,14 +112,18 @@ only opens a menu. It passes only with **both**
 |---|---|
 | `secrets.py` | Credential resolution; two principals, never conflated |
 | `login.py` | `sign_in_page()` + `authenticated_context()` + `login()` |
-| `safety.py` | Three-tier click guard; URL-scoped write grant |
-| `nav.py` | `open_expense_edit()` — row-index trap handled |
-| `widgets.py` | Concur custom-field drivers: `fill_combobox`, `fill_text`, `field_inventory`, `option_index` |
+| `safety.py` | Three-tier click guard; Test-Report + Concur-origin-scoped write grant |
+| `nav.py` | Open one expense by one-based row or stable ID; bulk-wizard rejected |
+| `widgets.py` | Field inventory + strict write helpers (`select_combobox_exact`, `fill_text_exact`) |
+| `type_map.py` / `type_map.json` | Versioned 67-type custom-field schema + loss/compat/conditional helpers |
+| `banners.py` | Blocking-banner inspection; presents by default, acts only on an explicit `--banner-action` |
 | `fields.py` | Field inventory + option reader |
 | `newexp.py` | Create path: `--list-types` / `--type` / `--save` |
 | `cascade.py` | Tests the `expenseType` → custom-fields cascade |
 | `typesweep.py` | Maps all 67 expense types to their custom fields |
 | `triage.py` | Per-expense: which required fields are empty |
+| `classify.py` | Read-only vendor/amount/detail table for expenses of a given type (especially `Undefined`) |
+| `edit.py` | Single-expense edit planner; persistence is structurally Test Report-only |
 | `savebtn.py` | Dumps the Save split-button; `--menu` reads its variants |
 | `discover.py` | Read-only explorer; destructive labels blocked |
 | `mapform.py` / `mapedit.py` / `maptab.py` | Form mapping, read-only |
@@ -108,7 +135,27 @@ only opens a menu. It passes only with **both**
 .venv/bin/python -m concurrer.login                       # verify sign-in
 .venv/bin/python -m concurrer.fields --report <ID> --row 1
 .venv/bin/python -m concurrer.triage --report <ID> --detail --max 5
+.venv/bin/python -m concurrer.classify --report <ID> --match Undefined
+.venv/bin/python -m concurrer.edit --report <ID> --expense-id <EXPENSE_ID> --set custom20="Taxi"
+.venv/bin/python -m concurrer.edit --report B857BA45DBC24EDB8420 --expense-id <TEST_EXPENSE_ID> --set comment="Test marker" --save
 .venv/bin/python -m concurrer.newexp --type "Ground Transportation" --save   # TEST REPORT ONLY
+
+The `classify` command emits a Markdown table with vendor, amount, payment
+method, and a blank "Expense type" column. It is read-only; use it to give the
+operator enough context to resolve `Undefined` rows before building an edit.
+
+`edit` is **plan-only by default**: it reads a fresh form, validates every
+requested stable field name/value pair, and prints the proposed changes without
+filling a field or granting write access. `--save` requires a stable
+`--expense-id` and is structurally limited to the throwaway Test Report
+`B857BA45DBC24EDB8420`; it cannot save a real report.
+
+An expense-type change requires `--type`, `--expect-type`, and
+`--allow-type-change`. The plan reports values Concur would discard. It only
+restores customs whose slot **and label** remain identical—never merely matching
+`customNN` slots—and refuses to save if Concur's live schema differs from the
+versioned 67-type map.
+
 .venv/bin/python -m concurrer.typesweep
 ```
 
@@ -118,6 +165,14 @@ JSON dumps are the reliable record, not the PNGs.
 
 ## Things that will bite you
 
+- **Duo: do not block the foreground on a full run.** When device trust has
+  lapsed, a run waits minutes for the phone tap. Run the command in the
+  background and tail its log for `Duo number: NNN`, then surface the number
+  immediately — the number appears early, long before the run finishes.
+- **A blocking banner is an operator choice, not a nuisance.** Login presents
+  the visible text/choices and stops (`BannerBlocked`) rather than dismissing.
+  Pass `--banner-action trustarc=Understood` only after the operator has read
+  the notice; the live label is re-checked at click time.
 - **Concur's Details fields are not native controls.** The value is a
   `<span role="presentation" name="...">` inside a `role="combobox"`. A
   `querySelectorAll('input,select,textarea')` sweep reports them as absent.
@@ -145,5 +200,5 @@ status: `~/canon/workbook/devnotes.md`. Task board: `~/canon/workbook/tasks.md`.
 
 ## License
 
-Undecided. `duo-pass` is GPL-3.0-or-later and links propagate to anything
-linked against it, which constrains the options here.
+Undecided. `duo-pass` is GPL-3.0-or-later; determine the resulting licensing
+and distribution obligations before redistributing concurrer.

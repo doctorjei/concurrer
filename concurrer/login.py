@@ -25,10 +25,12 @@ import argparse
 import sys
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Mapping
 
 from duo_pass import PushApprover, complete_duo, configure, on_duo_page
 from playwright.sync_api import TimeoutError as PlaywrightTimeout, sync_playwright
 
+from .banners import handle_banners, parse_banner_actions
 from .secrets import STATE_DIR, resolve
 
 #: The **tenant** URL. `www.concursolutions.com` shows a bare identity field that
@@ -170,6 +172,7 @@ def sign_in_page(
     ufl_password: str,
     timeout_ms: int = 45_000,
     duo_timeout_ms: int = 300_000,
+    banner_actions: Mapping[str, str] | None = None,
 ) -> str:
     """Drive the hops on an **already-open** page and return the post-login URL.
 
@@ -184,6 +187,10 @@ def sign_in_page(
     # stale Duo trust that lands us past the form. Check before filling.
     page.goto(CONCUR_URL, wait_until="domcontentloaded", timeout=timeout_ms)
     page.wait_for_timeout(3000)
+    # A banner is an operator choice, not a nuisance to click through. This
+    # reports it by default; callers may provide one explicit response after
+    # displaying the notice to the operator.
+    handle_banners(page, banner_actions)
     if is_signed_in(page):
         print(f"already signed in -> {page.url}", file=sys.stderr)
         return page.url
@@ -260,6 +267,7 @@ def login(
     persist: bool = True,
     timeout_ms: int = 45_000,
     duo_timeout_ms: int = 300_000,
+    banner_actions: Mapping[str, str] | None = None,
 ) -> str:
     """Sign in and return the post-login URL. Raises on any failed hop.
 
@@ -275,6 +283,7 @@ def login(
         persist=persist,
         timeout_ms=timeout_ms,
         duo_timeout_ms=duo_timeout_ms,
+        banner_actions=banner_actions,
     ) as page:
         return page.url
 
@@ -289,6 +298,7 @@ def authenticated_context(
     persist: bool = True,
     timeout_ms: int = 45_000,
     duo_timeout_ms: int = 300_000,
+    banner_actions: Mapping[str, str] | None = None,
 ):
     """Context manager yielding a **live, signed-in page**.
 
@@ -317,6 +327,7 @@ def authenticated_context(
                 ufl_password=ufl_password,
                 timeout_ms=timeout_ms,
                 duo_timeout_ms=duo_timeout_ms,
+                banner_actions=banner_actions,
             )
             yield page
         except Exception:
@@ -337,6 +348,13 @@ def main() -> int:
     ap.add_argument("--secrets-file", type=Path, default=None)
     ap.add_argument("--headed", action="store_true", help="show the browser (needs a display)")
     ap.add_argument("--no-persist", action="store_true", help="ephemeral profile, no device trust")
+    ap.add_argument(
+        "--banner-action",
+        action="append",
+        default=[],
+        metavar="BANNER_ID=EXACT_LABEL",
+        help="one explicit response to a displayed banner; repeatable",
+    )
     ap.add_argument("--timeout", type=int, default=45_000, help="form-fill timeout (ms)")
     ap.add_argument(
         "--duo-timeout",
@@ -347,6 +365,7 @@ def main() -> int:
     args = ap.parse_args()
 
     try:
+        banner_actions = parse_banner_actions(args.banner_action)
         creds = resolve(
             concur_username=args.concur_username,
             ufl_username=args.ufl_username,
@@ -370,6 +389,7 @@ def main() -> int:
             persist=not args.no_persist,
             timeout_ms=args.timeout,
             duo_timeout_ms=args.duo_timeout,
+            banner_actions=banner_actions,
         )
     except Exception as exc:  # noqa: BLE001
         print(f"\nlogin failed: {type(exc).__name__}: {exc}", file=sys.stderr)

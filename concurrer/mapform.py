@@ -27,6 +27,7 @@ import sys
 # (sync_playwright is opened inside authenticated_context)
 
 from .login import authenticated_context
+from .safety import click_safe
 from .secrets import resolve
 
 #: The report we are allowed to poke at. Default is the operator-designated
@@ -99,7 +100,7 @@ def main() -> int:
             return 1
 
         print("opening 'Manually Create Expense' (nothing saves)...")
-        opener.click(timeout=15_000)
+        click_safe(page, opener, "Manually Create Expense")
         page.wait_for_timeout(6000)
 
         fields = page.evaluate(FIELD_JS)
@@ -149,7 +150,11 @@ def main() -> int:
             )
         else:
             print(f"clicking {cancel[0]!r} to dismiss without saving")
-            page.get_by_role("button", name=cancel[0]).first.click(timeout=10_000)
+            click_safe(
+                page,
+                page.get_by_role("button", name=cancel[0]).first,
+                cancel[0],
+            )
             page.wait_for_timeout(2000)
             print(f"dismissed; now at {page.url}")
 

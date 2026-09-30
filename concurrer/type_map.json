@@ -1,0 +1,1285 @@
+{
+  "Agent/Agency Booking Fee": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Agency",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Airfare": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Type of Class",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Reservation Source",
+      "name": "custom17",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Airline Fees": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Type of Fee",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "All Inclusive Per Diem (Meals/Lodging)": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Departure Time (first day of travel)",
+      "name": "custom17",
+      "required": true
+    },
+    {
+      "label": "Return Time (last day travel)",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Number of Days",
+      "name": "custom28",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Audio/Visual Supplies": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Awards & Sponsorships": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Books & Publications": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Car Rental": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Rental Class",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Reservation Source",
+      "name": "custom17",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Chartered Aircraft": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Chartered Bus": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Computer Supplies/Peripherals": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Conferences/Seminar/Workshop Registration": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Courier/Shipping/Freight": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Currency Exchange/Bank Fees": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Entertainment Expense": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Total Number of Attendees",
+      "name": "custom28",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Entry Fee/Ticket": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Event Tickets": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Food & Beverages - Alcohol": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Total Number of Attendees",
+      "name": "custom28",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Food & Beverages - Breakfast": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Total Number of Attendees",
+      "name": "custom28",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Food & Beverages - Dinner": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Total Number of Attendees",
+      "name": "custom28",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Food & Beverages - Lunch": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Total Number of Attendees",
+      "name": "custom28",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Food & Beverages - Other": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Fraudulent/Disputed PCard Charge": [],
+  "Freight/Shipping/Courier": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Fuel - Car Rental": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Fuel - Personal Car": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Fuel - State Vehicle": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "State Vehicle/Decal/Vessel Number",
+      "name": "custom14",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Ground Transportation": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Type of Ground Transportation",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Were other travelers with you?",
+      "name": "custom29",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Immigration Fees": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Lab Supplies": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Laundry Services": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Number of consecutive days of travel",
+      "name": "custom28",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Library Resources <$250": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Lodging": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Reservation Source",
+      "name": "custom17",
+      "required": true
+    },
+    {
+      "label": "Are you sharing a room?",
+      "name": "custom29",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Lodging - Deposit / Refund": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Lodging - Group": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Number of Rooms",
+      "name": "custom28",
+      "required": true
+    },
+    {
+      "label": "Number of Nights",
+      "name": "custom24",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Lodging - Other Accommodations": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Type of Accomodation",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Are you sharing a room?",
+      "name": "custom29",
+      "required": true
+    },
+    {
+      "label": "Number of nights?",
+      "name": "custom28",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Memberships & Dues": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Length of Membership",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Mileage - Personal Car": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Type of Mileage",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Were other travelers with you?",
+      "name": "custom29",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Mileage - Reduction": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Miscellaneous Operating Expenses": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Miscellaneous Supplies": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Other Services - Non Employees": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Parking/Tolls/Road Charges": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Passports/Visa Fees": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Per Diem/Meal Adjustment": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Personal Expense": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Phone/Fax/Internet": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Postage": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Printing/Photocopying": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Professional Entertainment Services": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Professional Licenses": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Publishing Fees": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Recruitment Expenses": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Rental of Furniture & Equipment": [
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Length of Rental",
+      "name": "custom20",
+      "required": true
+    }
+  ],
+  "Rental of Space - External": [
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Length of Rental",
+      "name": "custom20",
+      "required": true
+    }
+  ],
+  "Small Hand Tools <$10,000": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Specialty Printing": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Subscriptions": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Supplies - Office General": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Tips/Gratuities": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Type of Tip/Gratuity",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Tournament/Competition Fees": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Train/Rail": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Travel Meals - Domestic": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Departure Time (first day of travel)",
+      "name": "custom17",
+      "required": true
+    },
+    {
+      "label": "Return Time (last day of travel)",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Number of Breakfasts",
+      "name": "custom24",
+      "required": true
+    },
+    {
+      "label": "Number of Lunches",
+      "name": "custom26",
+      "required": true
+    },
+    {
+      "label": "Number of Dinners",
+      "name": "custom27",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "UFFND Air Card charges only": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Type of Class",
+      "name": "custom20",
+      "required": true
+    },
+    {
+      "label": "Reservation Source",
+      "name": "custom17",
+      "required": true
+    }
+  ],
+  "VAT Tax - Goods & Services": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "VAT Tax - Travel": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ],
+  "Vaccinations": [
+    {
+      "label": "Trip Type",
+      "name": "custom13",
+      "required": true
+    },
+    {
+      "label": "Business Purpose",
+      "name": "custom12",
+      "required": true
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "name": "custom21",
+      "required": false
+    }
+  ]
+}

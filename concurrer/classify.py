@@ -22,7 +22,7 @@ import json
 import sys
 
 from .login import authenticated_context
-from .nav import open_expense_edit, open_report
+from .nav import expense_row_number, open_expense_edit, open_report
 from .secrets import resolve
 from .triage import triage_rows
 from .widgets import field_inventory
@@ -75,7 +75,7 @@ def main() -> int:
         print(f"report: {page.title()}")
 
         rows = triage_rows(page)
-        hits = [(i, r) for i, r in enumerate(rows)
+        hits = [(expense_row_number(i), r) for i, r in enumerate(rows)
                 if args.match.lower() in r["identity"].lower()]
         print(f"{len(rows)} rows total, {len(hits)} matching {args.match!r}\n")
 

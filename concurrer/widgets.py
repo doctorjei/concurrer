@@ -1,25 +1,25 @@
-"""Drivers for Concur's custom form widgets.
+"""Drivers for Concur's custom expense-form widgets.
 
-Concur's Details/create fields are custom comboboxes, not native controls — see
-`designs/expense-reports.md`. This module is the only place that knows how to
-operate them, so the edit path and the create path share one implementation.
-
-Every click here goes through `click_safe`. Opening a field's option list is not
-a write (its `data-nuiexp` is `field-<name>__trigger`, no save/submit in it);
-committing an option passes the option's own text to the guard, so an option
-named e.g. "Delete ..." would be refused rather than clicked.
-
-Verified commit behaviour (2026-09-21, Test Report): a combobox commits on a
-**single click** on the option. No confirm step, no Save-and-Add-Another needed.
+Concur Details fields are custom comboboxes rather than native controls. Stable
+``data-nuiexp="field-<name>__trigger"`` handles let us operate them without
+React's transient IDs. This module centralizes inventory and widget mechanics;
+the editor uses only its strict write helpers, never the permissive creation
+helper retained for the throwaway creation harness.
 """
 
 from __future__ import annotations
 
-from .safety import click_safe
+from .safety import assert_write_authorized, click_safe
+
+OPTIONS = "[role=dialog] [role=option], [role=listbox] [role=option]"
+
+
+def _norm(text: str) -> str:
+    return " ".join((text or "").split()).casefold()
 
 
 def field_value(page, label: str) -> str:
-    """Current displayed value of a field, looked up by its label."""
+    """Current displayed value of a field, looked up by visible label."""
     return page.evaluate(
         """(label) => {
             const labs = Array.from(document.querySelectorAll(
@@ -39,7 +39,11 @@ def field_value(page, label: str) -> str:
 
 
 def field_inventory(page) -> list[dict]:
-    """Every field on the current page: label, name, value, required, locked."""
+    """Read complete live field state using stable canonical field names.
+
+    Values are intentionally not truncated: the result is used for exact
+    validation and post-save verification, not just human-facing summaries.
+    """
     return page.evaluate(
         """() => {
         const out = [];
@@ -53,19 +57,23 @@ def field_inventory(page) -> list[dict]:
             const container = hd.parentElement;
             if (!container || seen.has(container)) continue;
             seen.add(container);
+
             const combo = container.querySelector('[role=combobox]');
             const input = container.querySelector(
                 'input:not([type=hidden]), textarea');
             const ctrl = combo || input;
             if (!ctrl) continue;
             const nui = Array.from(container.querySelectorAll('[data-nuiexp]'))
-                .map(e => e.getAttribute('data-nuiexp'));
-            let name = (ctrl.querySelector('[name]')
-                        && ctrl.querySelector('[name]').getAttribute('name'))
+                .map(e => e.getAttribute('data-nuiexp')).filter(Boolean);
+
+            let name = (combo && combo.querySelector('[name]')
+                        && combo.querySelector('[name]').getAttribute('name'))
                     || (input && input.getAttribute('name')) || '';
             if (!name) { for (const t of nui) {
-                const m = t.match(/^field-([A-Za-z0-9_]+)__/);
-                if (m) { name = m[1]; break; } } }
+                const m = t.match(/^field-([A-Za-z0-9_]+)(?:__|$)/);
+                if (m) { name = m[1]; break; }
+            } }
+
             let value = '';
             if (input) value = input.value || '';
             else {
@@ -76,8 +84,10 @@ def field_inventory(page) -> list[dict]:
             }
             const locked = input ? !!(input.readOnly || input.disabled)
                 : (combo ? combo.getAttribute('aria-disabled') === 'true' : false);
+            const validation = container.querySelector('[data-test="validation-status"]');
+            const trigger = nui.find(t => t.endsWith('__trigger')) || '';
             out.push({
-                label, name, value: value.slice(0, 120),
+                label, name, value,
                 required: !!hd.querySelector('.sapcnqr-form-field__required')
                     || (combo ? combo.getAttribute('aria-required') === 'true'
                              : false),
@@ -85,6 +95,10 @@ def field_inventory(page) -> list[dict]:
                 widget: combo ? 'combobox'
                     : (input.tagName.toLowerCase() + '/' + (input.type || '')),
                 nuiexp: nui,
+                trigger,
+                inputNuiexp: input ? (input.getAttribute('data-nuiexp') || '') : '',
+                maxlength: input ? (input.getAttribute('maxlength') || '') : '',
+                validation: validation ? (validation.innerText || '').trim() : '',
             });
         }
         return out;
@@ -92,13 +106,22 @@ def field_inventory(page) -> list[dict]:
     )
 
 
-def read_options(page) -> list[str]:
-    """Option texts in whatever option list is currently open, deduped.
+def field_by_name(fields: list[dict], name: str) -> dict:
+    """Return one canonical field or fail closed on absence/ambiguity."""
+    matches = [field for field in fields if field["name"] == name]
+    if len(matches) != 1:
+        detail = "absent" if not matches else "ambiguous"
+        raise ValueError(f"field {name!r} is {detail} in the live form")
+    return matches[0]
 
-    Concur option rows carry a long account-code description after the display
-    name on a second line. The display name is the first line.
-    """
-    raw = page.evaluate(
+
+def field_value_by_name(page, name: str) -> str:
+    """Read one field's current full value by its canonical name."""
+    return field_by_name(field_inventory(page), name)["value"]
+
+
+def _option_texts(page) -> list[str]:
+    return page.evaluate(
         """() => Array.from(document.querySelectorAll(
             '[role=dialog] [role=option], [role=listbox] [role=option]'))
             .filter(el => { const r = el.getBoundingClientRect();
@@ -106,39 +129,136 @@ def read_options(page) -> list[str]:
             .map(el => (el.innerText || '').trim())
             .filter(Boolean)"""
     )
-    return list(dict.fromkeys(raw))
+
+
+def read_options(page) -> list[str]:
+    """Option texts in the currently open list, deduplicated for display."""
+    return list(dict.fromkeys(_option_texts(page)))
 
 
 def option_index(page) -> dict[str, int]:
-    """Display name -> option index, for clicking by position.
-
-    Clicking by index rather than by text is deliberate. Playwright normalises
-    whitespace when matching `has_text`, so a pattern containing a newline or a
-    non-breaking space from a Concur description will not match the normalised
-    DOM text — a real failure seen 2026-09-21. Index is unambiguous.
-    """
-    raw = page.evaluate(
-        """() => Array.from(document.querySelectorAll(
-            '[role=dialog] [role=option], [role=listbox] [role=option]'))
-            .filter(el => { const r = el.getBoundingClientRect();
-                return r.width > 3 && r.height > 3; })
-            .map(el => (el.innerText || '').trim())
-            .filter(Boolean)"""
-    )
+    """First-line display name to option index for legacy read/create callers."""
     out: dict[str, int] = {}
-    for i, text in enumerate(raw):
+    for index, text in enumerate(_option_texts(page)):
         name = text.split("\n")[0].strip()
         if name and name not in out:
-            out[name] = i
+            out[name] = index
     return out
 
 
-def fill_combobox(page, name: str, label: str,
-                 prefer: str | None = None) -> str:
-    """Open a combobox and commit one option. Returns the committed value.
+def exact_option_position(option_texts: list[str], requested: str) -> int:
+    """Return the one exact normalized first-line option index or fail closed."""
+    requested_norm = _norm(requested)
+    matches = [
+        index
+        for index, text in enumerate(option_texts)
+        if _norm(text.split("\n")[0]) == requested_norm
+    ]
+    if len(matches) != 1:
+        match_desc = "no" if not matches else "multiple"
+        raise ValueError(f"{match_desc} exact options for {requested!r}")
+    return matches[0]
 
-    `prefer` picks the first option whose display name contains that substring;
-    otherwise the first option is taken.
+
+def _trigger_for(field: dict) -> str:
+    trigger = field.get("trigger") or ""
+    if trigger:
+        return trigger
+    for nuiexp in field.get("nuiexp", []):
+        if nuiexp.endswith("__trigger"):
+            return nuiexp
+    if field.get("name"):
+        return f"field-{field['name']}__trigger"
+    return ""
+
+
+def select_combobox_exact(page, field: dict, requested: str) -> str:
+    """Commit one uniquely exact normalized option and verify its displayed value.
+
+    This is deliberately separate from ``fill_combobox()``. It never performs a
+    substring match or first-option fallback, both of which are unacceptable for
+    an operator-requested edit.
+    """
+    if field.get("widget") != "combobox":
+        raise ValueError(f"field {field.get('name')!r} is not a combobox")
+    if field.get("locked"):
+        raise ValueError(f"field {field.get('name')!r} is locked")
+    if not requested or not requested.strip():
+        raise ValueError("combobox value must not be blank")
+    assert_write_authorized(page.url)
+
+    trigger = _trigger_for(field)
+    if not trigger:
+        raise ValueError(f"field {field.get('name')!r} has no stable options trigger")
+    locator = page.locator(f'[data-nuiexp="{trigger}"]')
+    if locator.count() != 1:
+        raise RuntimeError(f"expected one trigger for field {field.get('name')!r}")
+    click_safe(page, locator, f"open options for {field['label']}")
+    page.wait_for_timeout(1500)
+
+    texts = _option_texts(page)
+    try:
+        index = exact_option_position(texts, requested)
+    except ValueError as exc:
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(300)
+        raise ValueError(f"{exc} in {field['label']!r}") from exc
+
+    chosen = texts[index].split("\n")[0].strip()
+    # Opening a picker is not itself a mutation, but its option commits one.
+    # Recheck the live Test Report route immediately before that click so a
+    # redirect during the popup wait cannot turn it into a real-report edit.
+    assert_write_authorized(page.url)
+    options = page.locator(OPTIONS)
+    click_safe(page, options.nth(index), chosen)
+    page.wait_for_timeout(1200)
+    after = field_value(page, field["label"])
+    if _norm(after) != _norm(requested):
+        raise RuntimeError(
+            f"field {field['label']!r} did not take {requested!r}; now {after!r}"
+        )
+    return after
+
+
+def fill_text_exact(page, field: dict, value: str) -> str:
+    """Fill an unlocked native field after Test Report authorization and readback."""
+    if field.get("locked"):
+        raise ValueError(f"field {field.get('name')!r} is locked")
+    if not field.get("widget", "").startswith(("input/", "textarea/")):
+        raise ValueError(f"field {field.get('name')!r} is not a native text field")
+    if not value or not value.strip():
+        raise ValueError("text value must not be blank")
+    maxlength = field.get("maxlength") or ""
+    if maxlength.isdigit() and len(value) > int(maxlength):
+        raise ValueError(
+            f"value for {field['label']!r} exceeds maxlength {maxlength}"
+        )
+    assert_write_authorized(page.url)
+
+    loc = page.get_by_role("textbox", name=field["label"])
+    if loc.count() == 0 and field.get("name"):
+        name = field["name"]
+        loc = page.locator(f"input[name='{name}'], textarea[name='{name}']")
+    if loc.count() == 0 and field.get("inputNuiexp"):
+        loc = page.locator(f'[data-nuiexp="{field["inputNuiexp"]}"]')
+    if loc.count() != 1:
+        raise RuntimeError(f"expected one native control for field {field['label']!r}")
+    loc.fill(value)
+    # Read the same native control we filled. Label/container traversal is not
+    # reliable for Comment and can select a decorative sibling instead.
+    after = loc.input_value()
+    if after != value:
+        raise RuntimeError(
+            f"field {field['label']!r} did not take {value!r}; now {after!r}"
+        )
+    return after
+
+
+def fill_combobox(page, name: str, label: str, prefer: str | None = None) -> str:
+    """Legacy permissive combobox filler for the Test Report creation harness.
+
+    ``prefer`` selects the first containing option; absent a match, it selects the
+    first option. The safe editor must use ``select_combobox_exact`` instead.
     """
     trig = page.locator(f'[data-nuiexp="field-{name}__trigger"]')
     if trig.count() == 0:
@@ -155,15 +275,11 @@ def fill_combobox(page, name: str, label: str,
         return ""
     print(f"    {label}: {len(idx)} options -> {list(idx)[:8]}")
 
-    chosen = next((nm for nm in idx if prefer and prefer.lower() in nm.lower()),
-                 None)
+    chosen = next((nm for nm in idx if prefer and prefer.lower() in nm.lower()), None)
     if chosen is None:
         chosen = next(iter(idx))
 
-    opts = page.locator(
-        '[role=dialog] [role=option], [role=listbox] [role=option]')
-    # Pass the display name, not the full description, so the guard sees a
-    # clean label.
+    opts = page.locator(OPTIONS)
     click_safe(page, opts.nth(idx[chosen]), chosen)
     page.wait_for_timeout(3000)
     after = field_value(page, label)
@@ -172,11 +288,12 @@ def fill_combobox(page, name: str, label: str,
 
 
 def fill_text(page, field: dict, value: str) -> bool:
-    """Fill a native input/textarea by name, falling back to its label."""
+    """Legacy unguarded text filler retained for existing creation code only."""
     loc = page.get_by_role("textbox", name=field["label"])
     if loc.count() == 0 and field["name"]:
         loc = page.locator(
-            f"input[name='{field['name']}'], textarea[name='{field['name']}']")
+            f"input[name='{field['name']}'], textarea[name='{field['name']}']"
+        )
     if loc.count() == 0:
         return False
     loc.first.fill(value)

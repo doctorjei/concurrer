@@ -25,6 +25,7 @@ import json
 import sys
 
 from .login import authenticated_context
+from .safety import click_safe
 from .secrets import resolve
 
 OUT = "/home/agent/.config/concur/discover"
@@ -64,7 +65,7 @@ BUTTON_JS = """() => Array.from(document.querySelectorAll('button'))
 def main() -> int:
     ap = argparse.ArgumentParser(description="Map the expense EDIT form, read-only.")
     ap.add_argument("--report", required=True)
-    ap.add_argument("--row", type=int, default=0, help="which expense row to open (default first)")
+    ap.add_argument("--row", type=int, default=1, help="one-based expense row to open (default first)")
     args = ap.parse_args()
 
     creds = resolve()
@@ -89,11 +90,17 @@ def main() -> int:
         boxes = page.locator(".sapcnqr-checkbox__input")
         n_boxes = boxes.count()
         print(f"row checkboxes: {n_boxes}")
-        if n_boxes == 0:
-            print("No selectable rows on this report.", file=sys.stderr)
+        if n_boxes <= 1:
+            print("No selectable expense rows on this report.", file=sys.stderr)
             return 1
+        if args.row < 1 or args.row >= n_boxes:
+            print(
+                f"row must be 1 through {n_boxes - 1}; row 0 is select-all",
+                file=sys.stderr,
+            )
+            return 2
         print(f"selecting row {args.row} (checkbox tick only)...")
-        boxes.nth(args.row).click(timeout=15_000)
+        click_safe(page, boxes.nth(args.row), "row checkbox")
         page.wait_for_timeout(2500)
 
         edits = page.locator("button", has_text="Edit")
@@ -112,7 +119,7 @@ def main() -> int:
             )
             return 2
         print("Edit is enabled. Opening (read-only, will Cancel)...")
-        target.click(timeout=15_000)
+        click_safe(page, target, "Edit")
         page.wait_for_timeout(7000)
 
         fields = page.evaluate(FIELD_JS)
@@ -144,7 +151,11 @@ def main() -> int:
         cancel_after = [b for b in buttons_after if b.lower() in ("cancel", "close")]
         if cancel_after:
             print(f"clicking {cancel_after[0]!r} — NOT Save")
-            page.get_by_role("button", name=cancel_after[0]).first.click(timeout=10_000)
+            click_safe(
+                page,
+                page.get_by_role("button", name=cancel_after[0]).first,
+                cancel_after[0],
+            )
             page.wait_for_timeout(2500)
             print(f"dismissed; now at {page.url}")
         else:

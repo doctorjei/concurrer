@@ -26,7 +26,7 @@ import re
 import sys
 
 from .login import authenticated_context
-from .nav import open_expense_edit, open_report
+from .nav import expense_row_number, open_expense_edit, open_report
 from .safety import click_safe
 from .secrets import resolve
 from .widgets import field_inventory
@@ -51,6 +51,7 @@ ROWS_JS = """() => {
             '.sapcnqr-data-grid-list__row')) {
         const lab = row.querySelector('label.sapcnqr-checkbox');
         const identity = lab ? (lab.innerText || '').trim() : '';
+        if (identity.toLowerCase().startsWith('select all')) continue;
         const btnTexts = Array.from(row.querySelectorAll('button'))
             .map(e => (e.innerText || '').trim()).filter(Boolean);
         const counts = {};
@@ -125,7 +126,7 @@ def main() -> int:
         total_a = sum(r["n_alerts"] for r in rows)
         print(f"totals: {total_e} errors, {total_w} warnings, {total_a} alerts")
 
-        for i, r in enumerate(rows):
+        for i, r in enumerate(rows, 1):
             flag = "FIX " if r["needs_fix"] else "    "
             print(f" {flag}{i:>3}. {r['identity'][:56]:<56} "
                   f"E={r['n_errors']} W={r['n_warnings']} A={r['n_alerts']}")
@@ -140,17 +141,17 @@ def main() -> int:
             # anywhere in the body). Earlier dumps that showed them were taken
             # from the expense edit page with the exception panel rendered.
             # So when the list gives no counts, every row must be opened.
-            candidates = ([(i, r) for i, r in enumerate(rows) if r["needs_fix"]]
-                         if any(r["needs_fix"] for r in rows)
-                         else list(enumerate(rows)))
-            candidates = [(i, r) for i, r in candidates
-                         if not r["identity"].lower().startswith("select all")]
+            candidates = (
+                [(expense_row_number(i), r) for i, r in enumerate(rows) if r["needs_fix"]]
+                if any(r["needs_fix"] for r in rows)
+                else [(expense_row_number(i), r) for i, r in enumerate(rows)]
+            )
             print(f"\nopening {min(len(candidates), args.max)} rows for detail...")
-            for n, (i, r) in enumerate(candidates[:args.max], 1):
+            for n, (row, r) in enumerate(candidates[:args.max], 1):
                 try:
-                    eid = open_expense_edit(page, args.report, i)
+                    eid = open_expense_edit(page, args.report, row)
                 except Exception as exc:
-                    print(f"  {n}. row {i}: could not open ({exc})")
+                    print(f"  {n}. row {row}: could not open ({exc})")
                     continue
                 info = broken_in(page)
                 r["expense_id"] = eid

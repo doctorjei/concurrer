@@ -1,52 +1,27 @@
-"""Shared safety guard for anything that clicks inside live Concur.
+"""Shared safety guard for anything that changes live Concur.
 
-Every click in this codebase goes through `click_safe()`. Mutating actions are
-unreachable by construction, not by convention.
-
-Three tiers, because "never" and "not yet" are different requirements:
+Three tiers:
 
   NEVER      submit / approve / reject / recall / void / delete / duplicate /
              allocate / combine / remove / discard. No grant unlocks these.
-             Submission is irreversible and moves a real person's money into
-             an approval queue; the others destroy or redistribute.
-
-  GRANTABLE  save. Permitted ONLY while a write grant is active AND the live
-             browser URL belongs to the authorized report. Checked at click
-             time, so a stray navigation revokes the grant.
-
+  GRANTABLE  save and field edits. Permitted only for the Test Report while the
+             live browser URL is still its Concur expense route.
   FREE       everything else — Edit, Details, View Alerts, row checkboxes.
 
-Why the guard is this way. `Save Expense` is a **split button** (verified
-2026-09-21):
-
-    <div class="sapcnqr-split-button" role="group" data-toolbar-region="end">
-      <button data-nuiexp="exp-save-expense" class="...split-button__action">
-        <span class="sapcnqr-button__text">Save Expense</span></button>
-      <button data-nui-widgets="menu-button-trigger" aria-haspopup="true"
-              aria-label="More Save Options" .../></div>
-
-Its menu holds one item, "Save and Add Another". There is also a live off-screen
-twin, `exp-save-expense-hidden`, 1x1px at (-10001,-9949), not disabled.
-
-The original guard matched whole labels, which is bypassable: "Save and Submit"
-matches neither `save expense` nor `submit`. So:
-
-  1. Dangerous verbs match as SUBSTRINGS. Over-blocking is the correct failure
-     direction — a false refusal costs a retry, a false allow writes to a real
-     expense.
-  2. `data-nuiexp` is checked independently of the label, because it is the
-     stable machine name and labels are presentation.
-  3. One narrow carve-out: the `More Save Options` trigger legitimately says
-     "Save" but only opens a menu. Allowed past the label check only with BOTH
-     `data-nui-widgets="menu-button-trigger"` AND a truthy `aria-haspopup`.
+The write boundary is intentionally structural. ``authorize_writes()`` refuses
+any report other than ``TEST_REPORT_ID``; no flag, environment variable, or
+caller's label can widen it.
 """
 
 from __future__ import annotations
 
 import re
+from contextlib import contextmanager
+from urllib.parse import urlparse
 
 # The only report any tooling may write to. Empty, named "Test Report".
 TEST_REPORT_ID = "B857BA45DBC24EDB8420"
+CONCUR_ORIGIN = "https://us2.concursolutions.com"
 
 # Never permitted, under any grant.
 NEVER_WORDS = (
@@ -67,23 +42,22 @@ NEVER_WORDS = (
 GRANTABLE_WORDS = ("save",)
 GRANTABLE_NUIEXP = ("save",)
 
-# `data-nuiexp` fragments that are never permitted regardless of label.
-NEVER_NUIEXP = ("submit", "approve", "reject", "delete", "duplicate",
-                "allocate", "combine")
+# Machine names receive the same permanent deny treatment as visible labels.
+NEVER_NUIEXP = NEVER_WORDS
 
-# The only element allowed past a dangerous *label* without a grant: the trigger
-# that opens the save-variants menu.
+# The only element allowed past a save-bearing *label* without a grant: the
+# trigger that merely opens the Save variants menu. Its data-nuiexp must not
+# name Save itself, or it is still a grantable control.
 MENU_TRIGGER_WIDGET = "menu-button-trigger"
 
 _authorized_report: str | None = None
 
 
 def authorize_writes(report_id: str) -> None:
-    """Grant write access, scoped to one throwaway report.
+    """Grant Test Report write access for the current process.
 
-    The grant is checked against the live URL on every guarded click, so it does
-    not survive navigating to another report. Writes are still limited to
-    GRANTABLE words — this does not make submit reachable.
+    The grant is checked against the live URL at every guarded write. It never
+    enables actions in the permanent deny tier.
     """
     if report_id != TEST_REPORT_ID:
         raise AssertionError(
@@ -96,8 +70,19 @@ def authorize_writes(report_id: str) -> None:
 
 
 def revoke_writes() -> None:
+    """Remove the process-local write grant."""
     global _authorized_report
     _authorized_report = None
+
+
+@contextmanager
+def test_report_write_grant(report_id: str):
+    """Authorize the Test Report for one operation and always revoke afterward."""
+    authorize_writes(report_id)
+    try:
+        yield
+    finally:
+        revoke_writes()
 
 
 def grant_active() -> bool:
@@ -105,70 +90,118 @@ def grant_active() -> bool:
 
 
 def report_in_url(url: str) -> str | None:
-    m = re.search(r"/expense/reports/([0-9A-Fa-f]+)", url or "")
-    return m.group(1) if m else None
+    """Extract a report ID only from an anchored Concur expense-report path.
+
+    Query parameters intentionally do not affect the report identity: the valid
+    create form is the report path plus ``?modal=...``.
+    """
+    path = urlparse(url or "").path
+    match = re.match(
+        r"^/nui/expense/reports/([0-9A-Fa-f]+)(?:/|$)",
+        path,
+        flags=re.IGNORECASE,
+    )
+    return match.group(1) if match else None
+
+
+def _is_concur_origin(url: str) -> bool:
+    parsed = urlparse(url or "")
+    return parsed.scheme == "https" and (parsed.hostname or "").casefold() == "us2.concursolutions.com"
 
 
 def grant_covers(url: str) -> bool:
+    """Whether the active grant covers this exact live Concur report URL."""
+    report = report_in_url(url)
     return (
         _authorized_report is not None
-        and report_in_url(url) == _authorized_report
+        and _is_concur_origin(url)
+        and report is not None
+        and report.casefold() == _authorized_report.casefold()
     )
+
+
+def assert_write_authorized(url: str) -> None:
+    """Require the Test Report grant before a non-click field mutation."""
+    if not grant_covers(url):
+        raise AssertionError(
+            f"refusing field edit: live URL {url!r} is not the authorized "
+            "Test Report"
+        )
 
 
 def _norm(text: str) -> str:
     return " ".join((text or "").split()).lower()
 
 
-def assert_safe(label: str, nuiexp: str = "", is_menu_trigger: bool = False,
-                url: str = "") -> None:
-    """Raise if the described target is not permitted right now."""
+def assert_safe(
+    label: str,
+    nuiexp: str = "",
+    is_menu_trigger: bool = False,
+    url: str = "",
+) -> None:
+    """Raise if the described click target is not permitted right now."""
     lbl = _norm(label)
     exp = _norm(nuiexp)
 
-    # Tier 1: never.
+    # Tier 1: never. Both human and machine identities must be safe.
     for frag in NEVER_NUIEXP:
         if frag in exp:
             raise AssertionError(
                 f"refusing: data-nuiexp {nuiexp!r} names a never-allowed action"
             )
-    for w in NEVER_WORDS:
-        if w in lbl:
+    for word in NEVER_WORDS:
+        if word in lbl:
             raise AssertionError(
-                f"refusing: label {label!r} contains never-allowed verb {w!r}"
+                f"refusing: label {label!r} contains never-allowed verb {word!r}"
             )
 
-    # Tier 2: grantable.
-    wants_grant = any(w in lbl for w in GRANTABLE_WORDS) or any(
-        f in exp for f in GRANTABLE_NUIEXP)
-    if wants_grant:
-        if is_menu_trigger:
-            return  # opens the menu; does not act
-        if grant_covers(url):
+    # Tier 2: grantable. The More Save Options trigger is harmless only when
+    # its *label* says Save; a machine name containing save still needs a grant.
+    label_wants_grant = any(word in lbl for word in GRANTABLE_WORDS)
+    exp_wants_grant = any(frag in exp for frag in GRANTABLE_NUIEXP)
+    if label_wants_grant or exp_wants_grant:
+        if label_wants_grant and not exp_wants_grant and is_menu_trigger:
             return
-        raise AssertionError(
-            f"refusing: {label!r} writes, and the live URL {url!r} is not the "
-            f"authorized test report"
-        )
+        assert_write_authorized(url)
 
 
 def click_safe(page, locator, label: str) -> None:
-    """Click `locator` only if its label, attributes, and the live URL permit it."""
+    """Click ``locator`` only if its attributes and live URL permit it.
+
+    The caller label supplies useful intent, while ``data-nuiexp`` independently
+    protects controls whose visible text is missing or misleading.
+    """
     el = locator.first
     try:
         nuiexp = el.get_attribute("data-nuiexp") or ""
         widgets = el.get_attribute("data-nui-widgets") or ""
         popup_raw = (el.get_attribute("aria-haspopup") or "").strip().lower()
         haspopup = popup_raw not in ("", "false")
+        visible_text = el.inner_text() or ""
+        accessible_name = el.get_attribute("aria-label") or ""
+        labelledby_text = el.evaluate(
+            """node => (node.getAttribute('aria-labelledby') || '').split(/\\s+/)
+                .filter(Boolean).map(id => document.getElementById(id)?.innerText || '')
+                .join(' ')"""
+        ) or ""
+        title = el.get_attribute("title") or ""
         url = page.url if page is not None else ""
-    except Exception:
-        # Attribute read failed — fall back to label-only. Still a guard, just a
-        # weaker one, and with no URL a write cannot be authorized.
-        nuiexp = widgets = ""
-        haspopup = False
-        url = ""
+    except Exception as exc:
+        # A guard that cannot inspect its target must never click it. In
+        # particular, do not discard a partially read data-nuiexp and continue.
+        raise RuntimeError("refusing click: unable to inspect target safely") from exc
 
+    # Caller intent is useful, but a caller cannot describe a destructive target
+    # as harmless: visible text and all accessible-name sources are evaluated
+    # independently too.
+    effective_label = " ".join(
+        (label, visible_text, accessible_name, labelledby_text, title)
+    )
     is_menu_trigger = MENU_TRIGGER_WIDGET in widgets and haspopup
-    assert_safe(label, nuiexp=nuiexp, is_menu_trigger=is_menu_trigger, url=url)
-
+    assert_safe(
+        effective_label,
+        nuiexp=nuiexp,
+        is_menu_trigger=is_menu_trigger,
+        url=url,
+    )
     locator.click(timeout=15_000)

@@ -53,4 +53,5 @@ echo
 echo "Done. Credentials are NOT handled here by design - place them yourself:"
 echo "  ~/.config/concur/secrets.env   (chmod 600)"
 echo "    CONCUR_USERNAME=erthworm@ufl.edu"
-echo "    CONCUR_PASSWORD=..."
+echo "    UFL_USERNAME=erthworm"
+echo "    UFL_PASSWORD=..."
