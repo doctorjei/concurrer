@@ -90,6 +90,21 @@ class SafetyTests(unittest.TestCase):
             safety.click_safe(Page(), locator, "Edit")
         self.assertFalse(locator.clicked)
 
+    def test_field_mutation_guard_requires_live_test_report_url(self) -> None:
+        # The non-click write path (e.g. set_input_files) never passes through
+        # click_safe, so this assertion is its only authorization.
+        with self.assertRaises(AssertionError):
+            safety.assert_write_authorized(TEST_URL)
+        safety.authorize_writes(safety.TEST_REPORT_ID)
+        safety.assert_write_authorized(TEST_URL)
+        with self.assertRaises(AssertionError):
+            safety.assert_write_authorized(REAL_URL)
+        with self.assertRaises(AssertionError):
+            safety.assert_write_authorized(
+                "https://attacker.example/nui/expense/reports/"
+                f"{safety.TEST_REPORT_ID}/expenses/ABCDEF"
+            )
+
     def test_report_path_is_anchored_but_accepts_valid_query_forms(self) -> None:
         report = safety.TEST_REPORT_ID
         self.assertEqual(

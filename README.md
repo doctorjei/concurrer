@@ -128,6 +128,7 @@ only opens a menu. It passes only with **both**
 | `expexp.py` | Read-only full-report CSV export with re-read fidelity verification |
 | `pushcsv.py` | CSV dry-run / Test-Report-only batch driver over `edit.py`'s save path |
 | `probereceipts.py` | Read-only receipt/upload surface probe |
+| `receipts.py` | Per-expense receipt attach; dry-run default, Test-Report-only `--commit` |
 | `savebtn.py` | Dumps the Save split-button; `--menu` reads its variants |
 | `discover.py` | Read-only explorer; destructive labels blocked |
 | `mapform.py` / `mapedit.py` / `maptab.py` | Form mapping, read-only |
@@ -192,6 +193,34 @@ silently skipped or written. Each row is re-read and must still match the
 reviewed plan immediately before Save. Concur has no batch transaction: if a
 later row fails, the command stops and names earlier rows that are already
 **saved and verified**; it never tries a fictional rollback.
+
+### Receipts
+
+Attaches one local receipt file to one expense, by stable expense ID. The
+expense page's native `#upload-file` input is driven directly — no OS picker,
+no clicks on Upload/Save/Submit:
+
+```bash
+.venv/bin/python -m concurrer.receipts --report <REPORT_ID> --expense-id <EXPENSE_ID> --file receipt.png
+.venv/bin/python -m concurrer.receipts --report B857BA45DBC24EDB8420 --expense-id <TEST_EXPENSE_ID> --file receipt.png --commit
+```
+
+The default is a dry run that validates the file and IDs locally with **no
+browser and no grant**. `--commit` is structurally Test-Report-only and fails
+before credentials or a browser for any other report. Accepted suffixes are
+`.png .jpg .jpeg .pdf .tif .tiff` (the live control's contract); exactly one
+`--file` per run — multi-file semantics are unproven and `remove` is denied, so
+there is no undo for a partly-attached batch.
+
+File assignment is a mutation that bypasses the click guard, so the live URL is
+re-authorized immediately before the single `set_input_files()` call. A
+returned call proves assignment, not persistence: the command polls for the
+filename Concur itself renders, reopens the expense by stable ID, and reports
+`verified-persisted`, `observed-unverified`, or `attempted-unverified`
+honestly. It never retries — a blind retry could duplicate an attachment — and
+never attempts cleanup. Observation evidence lands owner-only under
+`~/.config/concur/receipts/` with no file paths, basenames, or raw page text;
+console output likewise reports only suffix and byte size.
 
 .venv/bin/python -m concurrer.typesweep
 ```
