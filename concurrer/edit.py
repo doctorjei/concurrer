@@ -28,7 +28,7 @@ import json
 import re
 import sys
 from dataclasses import asdict, dataclass, field
-from typing import Mapping
+from typing import Callable, Mapping
 
 from .banners import parse_banner_actions
 from .login import authenticated_context
@@ -289,6 +289,39 @@ def verify_saved_expense(page, report_id: str, expense_id: str, plan: EditPlan) 
     validate_before_save(fields, plan)
 
 
+def persist_and_verify_plan(
+    page,
+    report_id: str,
+    expense_id: str,
+    plan: EditPlan,
+    before: list[dict],
+    *,
+    on_save_attempt: Callable[[], None] | None = None,
+) -> None:
+    """Apply one validated plan, safely save it, and prove persistence.
+
+    This is the **only** single-expense mutation sequence. ``pushcsv`` uses it
+    rather than reimplementing a batch-local Save button, so strict writes,
+    safety-guarded clicking, and direct-ID readback cannot diverge.
+
+    ``on_save_attempt`` runs immediately before the guarded click. It lets a
+    batch caller report the honest outcome of a later exception: after that
+    point Save *may* have happened, so the current row must be inspected rather
+    than described as definitely unsaved.
+    """
+    fields = apply_plan(page, plan, before)
+    validate_before_save(fields, plan)
+
+    save = page.locator('[data-nuiexp="exp-save-expense"]')
+    if save.count() != 1 or not save.first.is_visible():
+        raise RuntimeError("expected exactly one visible primary Save Expense button")
+    if on_save_attempt is not None:
+        on_save_attempt()
+    click_safe(page, save, "Save Expense")
+    page.wait_for_timeout(7000)
+    verify_saved_expense(page, report_id, expense_id, plan)
+
+
 def _plan_payload(plan: EditPlan) -> dict:
     return {
         "current_type": plan.current_type,
@@ -344,15 +377,7 @@ def _run(
         changed_form = False
         try:
             changed_form = True
-            fields = apply_plan(page, plan, before)
-            validate_before_save(fields, plan)
-
-            save = page.locator('[data-nuiexp="exp-save-expense"]')
-            if save.count() != 1 or not save.first.is_visible():
-                raise RuntimeError("expected exactly one visible primary Save Expense button")
-            click_safe(page, save, "Save Expense")
-            page.wait_for_timeout(7000)
-            verify_saved_expense(page, request.report_id, expense_id, plan)
+            persist_and_verify_plan(page, request.report_id, expense_id, plan, before)
             print("saved and verified")
             return 0
         finally:

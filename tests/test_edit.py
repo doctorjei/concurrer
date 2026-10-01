@@ -3,8 +3,16 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
-from concurrer.edit import EditRequest, PlanError, build_edit_plan, parse_assignment, validate_before_save
+from concurrer.edit import (
+    EditRequest,
+    PlanError,
+    build_edit_plan,
+    parse_assignment,
+    persist_and_verify_plan,
+    validate_before_save,
+)
 
 
 def form_field(
@@ -105,6 +113,69 @@ class EditPlanTests(unittest.TestCase):
         )
         self.assertEqual(plan.current_type, "New Concur Type")
         self.assertEqual(plan.changes["comment"]["after"], "after")
+
+
+class PersistAndVerifyTests(unittest.TestCase):
+    def _page(self):
+        class First:
+            def is_visible(self):
+                return True
+
+        class Save:
+            first = First()
+
+            def count(self):
+                return 1
+
+        class Page:
+            def __init__(self):
+                self.events = []
+
+            def locator(self, selector):
+                self.events.append(("locator", selector))
+                return Save()
+
+            def wait_for_timeout(self, millis):
+                self.events.append(("wait", millis))
+
+        return Page()
+
+    def test_shared_persist_sequence_is_apply_validate_save_verify(self):
+        page = self._page()
+        events = page.events
+        before = ground_transportation_fields()
+        plan = object()
+        with (
+            patch("concurrer.edit.apply_plan", side_effect=lambda *_: events.append("apply") or before),
+            patch("concurrer.edit.validate_before_save", side_effect=lambda *_: events.append("validate")),
+            patch("concurrer.edit.click_safe", side_effect=lambda *_: events.append("click")),
+            patch("concurrer.edit.verify_saved_expense", side_effect=lambda *_: events.append("verify")),
+        ):
+            persist_and_verify_plan(page, "REPORT", "EXPENSE", plan, before)
+        self.assertEqual(
+            events,
+            [
+                "apply",
+                "validate",
+                ("locator", '[data-nuiexp="exp-save-expense"]'),
+                "click",
+                ("wait", 7000),
+                "verify",
+            ],
+        )
+
+    def test_validation_failure_never_reaches_save(self):
+        page = self._page()
+        before = ground_transportation_fields()
+        with (
+            patch("concurrer.edit.apply_plan", return_value=before),
+            patch("concurrer.edit.validate_before_save", side_effect=PlanError("bad form")),
+            patch("concurrer.edit.click_safe") as click,
+        ):
+            with self.assertRaisesRegex(PlanError, "bad form"):
+                persist_and_verify_plan(page, "REPORT", "EXPENSE", object(), before)
+        click.assert_not_called()
+        self.assertEqual(page.events, [])
 
 
 if __name__ == "__main__":

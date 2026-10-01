@@ -229,12 +229,13 @@ def main() -> int:
         )
         return 1
 
-    # Keep the live snapshot next to the CSV so a later dry-run can be
-    # reproduced without re-reading the report.
+    # Keep capture-time evidence next to the CSV for diagnosis only. It is
+    # deliberately NOT an input to pushcsv: a write decision must diff against
+    # the live browser state at the moment it is reviewed, not a stale export.
     snapshot = out_path.with_suffix(".live.json")
     snapshot.write_text(json.dumps({"report": args.report, "live": live_by_id}))
     snapshot.chmod(0o600)
-    print(f"  live snapshot: {snapshot}")
+    print(f"  export-time evidence (not push input): {snapshot}")
     print("\nnext: python -m concurrer.pushcsv --csv " + str(out_path))
     return 0
 

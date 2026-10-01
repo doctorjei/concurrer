@@ -28,6 +28,7 @@ stable field name as reported by ``field_inventory()``.
 from __future__ import annotations
 
 import csv
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
@@ -188,6 +189,11 @@ def write_expenses(path: Path, records: Sequence[ExpenseRecord]) -> list[str]:
         writer.writeheader()
         for record in records:
             writer.writerow(record.to_csv_row(columns))
+    # Expense values may include vendors, locations, amounts, travel requests,
+    # and comments. The adjacent live-state evidence is mode 600; leaving the
+    # spreadsheet at the process umask (commonly 644) would make the actual
+    # operator-facing export less protected than its diagnostic companion.
+    target.chmod(0o600)
     return columns
 
 
@@ -210,10 +216,10 @@ class Sheet:
 def read_expenses(path: Path) -> Sheet:
     """Parse a CSV written by :func:`write_expenses`.
 
-    Validates the header rather than guessing at it. A file missing
-    ``expense_id`` cannot be keyed on anything safe, so it is refused outright
-    instead of falling back to row order, which is exactly the identity
-    confusion this design exists to prevent.
+    Both identity headers are required. ``expense_id`` names the one expense to
+    open, while ``report_id`` names the report route that contains it. Falling
+    back to a row number, a caller-supplied report, or an inferred route would
+    make a spreadsheet able to aim a write at something its author never saw.
     """
     source = Path(path)
     if not source.is_file():
@@ -223,11 +229,12 @@ def read_expenses(path: Path) -> Sheet:
     with source.open("r", newline="", encoding="utf-8-sig") as handle:
         reader = csv.DictReader(handle)
         header = reader.fieldnames or []
-        if EXPENSE_ID_COLUMN not in header:
-            raise CsvError(
-                f"{source.name} has no {EXPENSE_ID_COLUMN!r} column; refusing to "
-                "guess row identity. Re-export with the export CLI."
-            )
+        for column in IDENTITY_COLUMNS:
+            if column not in header:
+                raise CsvError(
+                    f"{source.name} has no {column!r} column; refusing to guess "
+                    "identity. Re-export with the export CLI."
+                )
         rows = tuple(reader)
     field_columns = tuple(
         column
@@ -235,6 +242,45 @@ def read_expenses(path: Path) -> Sheet:
         if column not in IDENTITY_COLUMNS and column not in META_COLUMNS
     )
     return Sheet(field_columns=field_columns, rows=rows)
+
+
+_HEX_ID = re.compile(r"[0-9A-Fa-f]+\Z")
+
+
+def single_report_id(sheet: Sheet) -> str:
+    """Return the one valid report ID a CSV may target.
+
+    Identity is a property of the file, not a command-line preference. Every
+    row must name the same nonblank Concur report ID; any ambiguity is a
+    pre-browser error. Canonical uppercase makes a spreadsheet's cosmetic case
+    change harmless while preserving the hard-coded Test Report comparison.
+    """
+    if not sheet.rows:
+        raise CsvError("CSV has no expense rows, so it cannot identify one report")
+
+    report_id: str | None = None
+    for row_number, row in enumerate(sheet.rows, start=2):
+        raw = row.get(REPORT_ID_COLUMN)
+        if raw is None:
+            raise CsvError(f"row {row_number}: missing {REPORT_ID_COLUMN!r} value")
+        current = str(raw).strip()
+        if not current:
+            raise CsvError(f"row {row_number}: blank {REPORT_ID_COLUMN!r} value")
+        if not _HEX_ID.fullmatch(current):
+            raise CsvError(
+                f"row {row_number}: invalid {REPORT_ID_COLUMN!r} {current!r}; "
+                "Concur IDs must be hexadecimal"
+            )
+        canonical = current.upper()
+        if report_id is None:
+            report_id = canonical
+        elif report_id != canonical:
+            raise CsvError(
+                f"row {row_number}: {REPORT_ID_COLUMN!r} is {canonical!r}, "
+                f"but earlier rows identify {report_id!r}; mixed reports are refused"
+            )
+    assert report_id is not None
+    return report_id
 
 
 @dataclass
@@ -349,24 +395,33 @@ def plan_push(
     sheet: Sheet,
     live_by_id: Mapping[str, Sequence[Mapping[str, Any]]],
 ) -> PushPlan:
-    """Diff a whole sheet against live state keyed by stable expense ID."""
+    """Diff a whole sheet against live state keyed by stable expense ID.
+
+    Concur IDs are case-insensitive hexadecimal route components. Compare them
+    by canonical uppercase key so changing letter case in a spreadsheet neither
+    invents an "unknown" expense nor lets the same expense appear twice.
+    """
     push = PushPlan()
     seen: set[str] = set()
+    canonical_live = {
+        str(expense_id).strip().upper(): fields
+        for expense_id, fields in live_by_id.items()
+    }
     for row in sheet.rows:
         expense_id = str(row.get(EXPENSE_ID_COLUMN) or "").strip()
         if not expense_id:
             push.unknown_ids.append("<blank expense_id>")
             continue
-        if expense_id in seen:
+        key = expense_id.upper()
+        if key in seen:
             push.duplicate_ids.append(expense_id)
             continue
-        seen.add(expense_id)
-        if expense_id not in live_by_id:
+        seen.add(key)
+        fields = canonical_live.get(key)
+        if fields is None:
             push.unknown_ids.append(expense_id)
             continue
-        push.row_plans.append(
-            plan_row(row, live_by_id[expense_id], sheet.field_columns)
-        )
+        push.row_plans.append(plan_row(row, fields, sheet.field_columns))
     return push
 
 

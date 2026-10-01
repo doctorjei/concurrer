@@ -124,6 +124,10 @@ only opens a menu. It passes only with **both**
 | `triage.py` | Per-expense: which required fields are empty |
 | `classify.py` | Read-only vendor/amount/detail table for expenses of a given type (especially `Undefined`) |
 | `edit.py` | Single-expense edit planner; persistence is structurally Test Report-only |
+| `csvio.py` | Browser-free CSV schema, identity validation, and fresh-live diff engine |
+| `expexp.py` | Read-only full-report CSV export with re-read fidelity verification |
+| `pushcsv.py` | CSV dry-run / Test-Report-only batch driver over `edit.py`'s save path |
+| `probereceipts.py` | Read-only receipt/upload surface probe |
 | `savebtn.py` | Dumps the Save split-button; `--menu` reads its variants |
 | `discover.py` | Read-only explorer; destructive labels blocked |
 | `mapform.py` / `mapedit.py` / `maptab.py` | Form mapping, read-only |
@@ -155,6 +159,39 @@ An expense-type change requires `--type`, `--expect-type`, and
 restores customs whose slot **and label** remain identical—never merely matching
 `customNN` slots—and refuses to save if Concur's live schema differs from the
 versioned 67-type map.
+
+### CSV round trip
+
+Export is read-only and may target any readable report. It reads each expense's
+live form, writes one CSV row per stable expense ID, then re-reads the written
+file and requires a zero-change live diff before calling the export faithful:
+
+```bash
+.venv/bin/python -m concurrer.expexp --report <REPORT_ID> --out expenses.csv
+.venv/bin/python -m concurrer.pushcsv --csv expenses.csv        # fresh-live dry run
+.venv/bin/python -m concurrer.pushcsv --csv test-report.csv --commit
+```
+
+`expense_id` and `report_id` are mandatory **identity columns**, not editable
+fields. Every CSV row must name one same hexadecimal `report_id`; the command
+never accepts a target report on the CLI or falls back to a row number. Blank
+editable cells mean **no change**, never clear. A changed locked/off-form field
+or an `expenseType` change blocks the batch; type changes stay one-at-a-time in
+`edit.py` because Concur can silently discard type-specific values.
+
+`pushcsv` reopens every stable expense ID and plans against **fresh live state**,
+not the export-time `.live.json` evidence. Its default is read-only and prints
+every before/after change plus every refusal. `--commit` is structurally
+Test-Report-only (`B857BA45DBC24EDB8420`) and fails before credentials or a
+browser for any other report. Exported CSVs and their `.live.json` evidence are
+written at mode **600**: they can contain vendor, location, amount, request,
+and comment data.
+
+A commit needs a completely clean preflight: one invalid row means no rows are
+silently skipped or written. Each row is re-read and must still match the
+reviewed plan immediately before Save. Concur has no batch transaction: if a
+later row fails, the command stops and names earlier rows that are already
+**saved and verified**; it never tries a fictional rollback.
 
 .venv/bin/python -m concurrer.typesweep
 ```

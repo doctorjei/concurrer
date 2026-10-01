@@ -9,6 +9,7 @@ including the empty-``name`` field and values containing commas.
 from __future__ import annotations
 
 import csv
+import stat
 import tempfile
 import unittest
 from pathlib import Path
@@ -22,6 +23,7 @@ from concurrer.csvio import (
     expense_cells,
     plan_push,
     read_expenses,
+    single_report_id,
     stable_name,
     union_columns,
     write_expenses,
@@ -184,6 +186,14 @@ class RoundTripFidelityTests(unittest.TestCase):
         sheet = roundtrip(make_record())
         self.assertEqual(sheet.rows[0]["vendorName"], "UBER   *TRIP")
 
+    def test_export_csv_is_owner_read_write_only(self):
+        # The CSV is the operator-facing file and carries live expense values;
+        # protect it at least as tightly as the adjacent .live.json evidence.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "expenses.csv"
+            write_expenses(path, [make_record()])
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+
     def test_identity_and_meta_columns_present(self):
         sheet = roundtrip(make_record())
         self.assertEqual(sheet.rows[0][EXPENSE_ID_COLUMN], EXPENSE_ID)
@@ -336,10 +346,73 @@ class HeaderValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "plain.csv"
             path.write_text(
-                "expense_id,comment\nABC123,café\n", encoding="utf-8"
+                "expense_id,report_id,comment\nABC123,B857BA45DBC24EDB8420,café\n",
+                encoding="utf-8",
             )
             sheet = read_expenses(path)
             self.assertEqual(sheet.rows[0]["comment"], "café")
+
+
+class ReportIdentityTests(unittest.TestCase):
+    def _sheet_with(self, rows):
+        sheet = roundtrip(make_record())
+        return _with_rows(sheet, rows)
+
+    def test_single_report_id_canonicalizes_case(self):
+        row = dict(roundtrip(make_record()).rows[0])
+        row[REPORT_ID_COLUMN] = TEST_REPORT.lower()
+        self.assertEqual(single_report_id(self._sheet_with([row])), TEST_REPORT)
+
+    def test_empty_sheet_cannot_identify_a_report(self):
+        sheet = self._sheet_with([])
+        with self.assertRaisesRegex(CsvError, "no expense rows"):
+            single_report_id(sheet)
+
+    def test_blank_report_id_is_refused_with_row(self):
+        row = dict(roundtrip(make_record()).rows[0])
+        row[REPORT_ID_COLUMN] = "  "
+        with self.assertRaisesRegex(CsvError, "row 2.*blank"):
+            single_report_id(self._sheet_with([row]))
+
+    def test_short_row_missing_report_id_is_refused(self):
+        row = dict(roundtrip(make_record()).rows[0])
+        row[REPORT_ID_COLUMN] = None
+        with self.assertRaisesRegex(CsvError, "row 2.*missing"):
+            single_report_id(self._sheet_with([row]))
+
+    def test_invalid_report_id_is_refused(self):
+        row = dict(roundtrip(make_record()).rows[0])
+        row[REPORT_ID_COLUMN] = "not-a-concur-id"
+        with self.assertRaisesRegex(CsvError, "invalid.*hexadecimal"):
+            single_report_id(self._sheet_with([row]))
+
+    def test_mixed_report_ids_are_refused(self):
+        sheet = roundtrip(make_record())
+        first = dict(sheet.rows[0])
+        second = dict(sheet.rows[0])
+        second[EXPENSE_ID_COLUMN] = "ABCDEF0123456789"
+        second[REPORT_ID_COLUMN] = "DEADBEEF"
+        with self.assertRaisesRegex(CsvError, "row 3.*mixed reports"):
+            single_report_id(self._sheet_with([first, second]))
+
+    def test_missing_report_id_header_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad.csv"
+            path.write_text("expense_id,comment\nABC123,hello\n", encoding="utf-8")
+            with self.assertRaisesRegex(CsvError, "report_id"):
+                read_expenses(path)
+
+    def test_case_only_duplicate_expense_ids_are_refused(self):
+        sheet = roundtrip(make_record())
+        first = dict(sheet.rows[0])
+        second = dict(sheet.rows[0])
+        second[EXPENSE_ID_COLUMN] = EXPENSE_ID.lower()
+        push = plan_push(
+            _with_rows(sheet, [first, second]),
+            {EXPENSE_ID: GROUND_TRANSPORT_FIELDS},
+        )
+        self.assertEqual(push.duplicate_ids, [EXPENSE_ID.lower()])
+        self.assertEqual(len(push.row_plans), 1)
 
 
 class MultiExpenseTests(unittest.TestCase):
