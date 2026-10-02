@@ -18,7 +18,8 @@ fi
 .venv/bin/pip -q install --upgrade pip
 # duo-pass: Duo second-factor handling (GPL-3.0-or-later), spun out of canvasser.
 # playwright: browser automation. Pin loosely; both are early-versioned.
-.venv/bin/pip install 'duo-pass>=0.0.1' 'playwright>=1.40'
+# openpyxl: xlsx workbook export (MIT).
+.venv/bin/pip install 'duo-pass>=0.0.1' 'playwright>=1.40' 'openpyxl>=3.1'
 
 echo "==> Chromium browser binaries (into ~/.cache/ms-playwright, survives rebuild)"
 .venv/bin/playwright install chromium

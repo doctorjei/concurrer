@@ -17,6 +17,7 @@ import re
 from urllib.parse import urlparse
 
 from .safety import click_safe
+from .widgets import field_inventory
 
 BASE = "https://us2.concursolutions.com"
 
@@ -107,13 +108,45 @@ def _expense_id_in_url(url: str, report_id: str) -> str:
     return match.group(2)
 
 
+EXPENSE_READY_JS_POLL_MS = 500
+
+
+def wait_for_expense_ready(page, timeout_ms: int = 30_000) -> list[dict]:
+    """Wait until an expense form has readable named fields, then return them.
+
+    A fixed settle can both waste time and miss a slow form. This waits for
+    the populated state the reader actually needs. It raises rather than
+    returning an empty or unnamed inventory that would look like an expense
+    with no fields.
+    """
+    polled = 0
+    while polled < timeout_ms:
+        try:
+            fields = field_inventory(page)
+        except Exception:  # noqa: BLE001 - mid-navigation, retry
+            fields = []
+        if any(field.get("name") for field in fields):
+            return fields
+        page.wait_for_timeout(EXPENSE_READY_JS_POLL_MS)
+        polled += EXPENSE_READY_JS_POLL_MS
+    raise RuntimeError(
+        f"expense form never rendered named fields after {timeout_ms // 1000}s "
+        f"(url={page.url})"
+    )
+
+
 def open_expense_by_id(
     page,
     report_id: str,
     expense_id: str,
-    settle_ms: int = 7000,
+    settle_ms: int | None = None,
 ) -> str:
-    """Open and verify a specific expense's form by its stable Concur ID."""
+    """Open and verify a specific expense's form by its stable Concur ID.
+
+    With the default ``settle_ms=None``, navigation waits for readable form
+    fields instead of sleeping for a fixed interval. An explicit millisecond
+    value preserves the legacy fixed settle for callers that need it.
+    """
     if not re.fullmatch(r"[0-9A-Fa-f]+", expense_id or ""):
         raise ValueError(f"invalid expense ID {expense_id!r}")
     page.goto(
@@ -121,7 +154,10 @@ def open_expense_by_id(
         wait_until="domcontentloaded",
         timeout=60_000,
     )
-    page.wait_for_timeout(settle_ms)
+    if settle_ms is None:
+        wait_for_expense_ready(page)
+    else:
+        page.wait_for_timeout(settle_ms)
     got = _expense_id_in_url(page.url, report_id)
     if got.lower() != expense_id.lower():
         raise RuntimeError(
@@ -168,3 +204,28 @@ def open_expense_edit(page, report_id: str, row: int) -> str:
     click_safe(page, edits.first, "Edit")
     page.wait_for_timeout(7000)
     return _expense_id_in_url(page.url, report_id)
+
+
+#: Report-wide facts on the report main screen, by stable handle (captured
+#: read-only 2026-10-01). The document title carries the bare report name
+#: ("Expense - <name> - SAP Concur"); the on-page title appends the total.
+HEADER_JS = """() => {
+  const t = (sel) => {
+    const el = document.querySelector(`[data-nuiexp="${sel}"]`);
+    return el ? (el.innerText || '').trim().split('\\n').map(s => s.trim())
+        .filter(Boolean).join(' — ') : '';
+  };
+  const m = document.title.match(/^Expense - (.*) - SAP Concur$/);
+  return {
+    'Report Name': m ? m[1] : '',
+    'Report Number': t('erp-lnk-report-header-facet'),
+    'Status': t('report-status'),
+    'Total': t('report-entries-table-footer'),
+    'Linked Requests': t('linked-request-add-on'),
+  };
+}"""
+
+
+def report_header(page) -> dict[str, str]:
+    """Read report-wide facts from an already-loaded report page (no clicks)."""
+    return page.evaluate(HEADER_JS)

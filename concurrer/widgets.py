@@ -298,3 +298,54 @@ def fill_text(page, field: dict, value: str) -> bool:
         return False
     loc.first.fill(value)
     return True
+
+
+OPTIONS_JS = """() => {
+  const all = Array.from(document.querySelectorAll(
+      '[role=dialog] [role=option], [role=listbox] [role=option]'));
+  const visible = all.filter(el => { const r = el.getBoundingClientRect();
+      return r.width > 3 && r.height > 3; });
+  const setsize = all.map(el => el.getAttribute('aria-setsize'))
+      .find(Boolean) || null;
+  return {texts: visible.map(el => (el.innerText || '').trim()).filter(Boolean),
+          domCount: all.length, setsize};
+}"""
+
+
+class OptionsReadError(RuntimeError):
+    """A field changed while only its options were being read."""
+
+
+def read_combobox_options(page, field: dict) -> dict:
+    """Open one combobox, read its options, close it, prove nothing changed.
+
+    Never clicks an option. Safe on real reports: opening a picker is not a
+    mutation, and the field value is re-read after Escape — any difference
+    raises ``OptionsReadError`` so the caller abandons the form unsaved.
+    """
+    trigger = _trigger_for(field)
+    if not trigger:
+        return {"skipped": "no stable trigger"}
+    locator = page.locator(f'[data-nuiexp="{trigger}"]')
+    if locator.count() != 1:
+        return {"skipped": f"{locator.count()} trigger matches"}
+    before = field["value"]
+    click_safe(page, locator, f"open options for {field['label']}")
+    page.wait_for_timeout(1500)
+    got = page.evaluate(OPTIONS_JS)
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(600)
+    after = next(
+        (f["value"] for f in field_inventory(page) if f["name"] == field["name"]),
+        None,
+    )
+    if after != before:
+        raise OptionsReadError(
+            f"{field['name']} changed from {before!r} to {after!r} while only "
+            "reading options; aborting without saving"
+        )
+    got["options"] = list(dict.fromkeys(got.pop("texts")))
+    got["maybeTruncated"] = bool(
+        got["setsize"] and str(len(got["options"])) != str(got["setsize"])
+    ) or got["domCount"] > len(got["options"])
+    return got

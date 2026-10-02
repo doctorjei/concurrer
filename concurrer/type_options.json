@@ -1,0 +1,257 @@
+{
+ "Agent/Agency Booking Fee": {
+  "custom20": {
+   "label": "Agency",
+   "options": [
+    "01. World Travel Services",
+    "02. Other (Comment Required)"
+   ]
+  }
+ },
+ "Airfare": {
+  "custom17": {
+   "label": "Reservation Source",
+   "options": [
+    "01. Concur Online Booking",
+    "02. World Travel Agent Assisted Booking",
+    "03. Directly with Vendor/Other Travel Booking Website",
+    "04. Booking Exception – Over 20% Savings",
+    "05. Booking Exception – with FAO Approval",
+    "06. Established Exceptions per Travel Directives"
+   ]
+  },
+  "custom20": {
+   "label": "Type of Class",
+   "options": [
+    "01. Economy",
+    "02. Business Class",
+    "03. First Class"
+   ]
+  }
+ },
+ "Airline Fees": {
+  "custom20": {
+   "label": "Type of Fee",
+   "options": [
+    "Baggage",
+    "Cabin Upgrade (Comment Required)",
+    "Flight Insurance",
+    "In-Flight WiFi",
+    "Other (Comment Required)",
+    "Seat Selection/Upgrade (same cabin)",
+    "Ticket Change Fees"
+   ]
+  }
+ },
+ "All Inclusive Per Diem (Meals/Lodging)": {
+  "custom17": {
+   "label": "Departure Time (first day of travel)",
+   "options": [
+    "1. 12am - 6am",
+    "2. 6am - 12pm",
+    "3. 12pm - 6pm",
+    "4. 6pm - 11:59pm",
+    "5. Whole Day"
+   ]
+  },
+  "custom20": {
+   "label": "Return Time (last day travel)",
+   "options": [
+    "1. 12am - 6am",
+    "2. 6am - 12pm",
+    "3. 12pm - 6pm",
+    "4. 6pm - 11:59pm",
+    "5. Whole Day"
+   ]
+  }
+ },
+ "Car Rental": {
+  "custom17": {
+   "label": "Reservation Source",
+   "options": [
+    "01. Concur Online Booking",
+    "02. World Travel Agent Assisted Booking",
+    "03. Directly with Vendor/Other Travel Booking Website",
+    "04. Booking Exception – Over 20% Savings",
+    "05. Booking Exception – with FAO Approval",
+    "06. Established Exceptions per Travel Directives"
+   ]
+  },
+  "custom20": {
+   "label": "Rental Class",
+   "options": [
+    "Compact",
+    "Economy",
+    "Full Sized",
+    "Intermediate",
+    "Pickup/Truck",
+    "Standard Hybrid",
+    "SUV",
+    "Van"
+   ]
+  }
+ },
+ "Ground Transportation": {
+  "custom20": {
+   "label": "Type of Ground Transportation",
+   "options": [
+    "App Based Ride Share",
+    "Bus",
+    "Ferry",
+    "Other (Comment Required)",
+    "Shuttle",
+    "Subway/Tube",
+    "Taxi"
+   ]
+  },
+  "custom29": {
+   "label": "Were other travelers with you?",
+   "options": [
+    "No",
+    "Yes"
+   ]
+  }
+ },
+ "Lodging": {
+  "custom17": {
+   "label": "Reservation Source",
+   "options": [
+    "01. Concur Online Booking",
+    "02. World Travel Agent Assisted Booking",
+    "03. Directly with Vendor/Other Travel Booking Website",
+    "04. Booking Exception – Over 20% Savings",
+    "05. Booking Exception – with FAO Approval",
+    "06. Established Exceptions per Travel Directives"
+   ]
+  },
+  "custom29": {
+   "label": "Are you sharing a room?",
+   "options": [
+    "No",
+    "Yes"
+   ]
+  }
+ },
+ "Lodging - Other Accommodations": {
+  "custom20": {
+   "label": "Type of Accomodation",
+   "options": [
+    "AirBNB",
+    "Dorm Room",
+    "Hostel",
+    "KOA/ Campground",
+    "Long-term Rental",
+    "Other (Comment Required)"
+   ]
+  },
+  "custom29": {
+   "label": "Are you sharing a room?",
+   "options": [
+    "No",
+    "Yes"
+   ]
+  }
+ },
+ "Memberships & Dues": {
+  "custom20": {
+   "label": "Length of Membership",
+   "options": [
+    "1 Year",
+    "More than 1 Year"
+   ]
+  }
+ },
+ "Mileage - Personal Car": {
+  "custom20": {
+   "label": "Type of Mileage",
+   "options": [
+    "Local Mileage",
+    "Local Recurring Mileage",
+    "Travel Mileage",
+    "Travel Mileage in-lieu of Air"
+   ]
+  },
+  "custom29": {
+   "label": "Were other travelers with you?",
+   "options": [
+    "No",
+    "Yes"
+   ]
+  }
+ },
+ "Rental of Furniture & Equipment": {
+  "custom20": {
+   "label": "Length of Rental",
+   "options": [
+    "12 months or less",
+    "More than 12 months"
+   ]
+  }
+ },
+ "Rental of Space - External": {
+  "custom20": {
+   "label": "Length of Rental",
+   "options": [
+    "12 months or less",
+    "More than 12 months"
+   ]
+  }
+ },
+ "Tips/Gratuities": {
+  "custom20": {
+   "label": "Type of Tip/Gratuity",
+   "options": [
+    "Bell Services",
+    "Housekeeping",
+    "Meals",
+    "Other",
+    "Portage",
+    "Rideshare/Taxi",
+    "Valet"
+   ]
+  }
+ },
+ "Travel Meals - Domestic": {
+  "custom17": {
+   "label": "Departure Time (first day of travel)",
+   "options": [
+    "1. Leaving before 6am",
+    "2. Leaving between 6am - 12 noon",
+    "3. Leaving between 12 noon - 6pm",
+    "4. Leaving after 6pm",
+    "5. Whole Day"
+   ]
+  },
+  "custom20": {
+   "label": "Return Time (last day of travel)",
+   "options": [
+    "1. Returning before 8am",
+    "2. Returning between 8am - 2pm",
+    "3. Returning between 2pm - 8pm",
+    "4. Returning after 8pm",
+    "5. Whole Day"
+   ]
+  }
+ },
+ "UFFND Air Card charges only": {
+  "custom17": {
+   "label": "Reservation Source",
+   "options": [
+    "01. Concur Online Booking",
+    "02. World Travel Agent Assisted Booking",
+    "03. Directly with Vendor/Other Travel Booking Website",
+    "04. Booking Exception – Over 20% Savings",
+    "05. Booking Exception – with FAO Approval",
+    "06. Established Exceptions per Travel Directives"
+   ]
+  },
+  "custom20": {
+   "label": "Type of Class",
+   "options": [
+    "01. Economy",
+    "02. Business Class",
+    "03. First Class"
+   ]
+  }
+ }
+}

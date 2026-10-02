@@ -1,13 +1,16 @@
-"""Export an expense report to CSV for offline editing.
+"""Export an expense report to CSV or an xlsx workbook for offline editing.
 
 **Read-only.** This module never fills a field, never requests a write grant,
-and never clicks anything that mutates. It may therefore target any report the
+and never clicks anything that mutates. For ``.xlsx`` output it also opens
+each dropdown once to read its option list (``widgets.read_combobox_options``:
+no option is clicked, and the value is re-read after closing). It may therefore target any report the
 operator can read, including real ones — reading is not a write and the safety
 guard is not involved.
 
 The round trip is:
 
     python -m concurrer.expexp   --report <ID> --out expenses.csv
+    python -m concurrer.expexp   --report <ID> --out report.xlsx   # workbook
     # ...edit expenses.csv in a spreadsheet...
     python -m concurrer.pushcsv  --csv expenses.csv            # dry run
     python -m concurrer.pushcsv  --csv expenses.csv --commit   # Test Report only
@@ -41,9 +44,25 @@ from .csvio import (
     write_expenses,
 )
 from .login import authenticated_context
-from .nav import expense_row_number, open_expense_edit, open_report, wait_for_report_ready
+from .nav import (
+    expense_row_number,
+    open_expense_by_id,
+    open_expense_edit,
+    open_report,
+    report_header,
+    wait_for_report_ready,
+)
 from .secrets import STATE_DIR, resolve
-from .triage import triage_rows
+from .triage import row_expense_id, triage_rows
+from .widgets import read_combobox_options
+from .xlsxio import (
+    SEARCH_FIELDS,
+    WorkbookData,
+    exported_at,
+    maxlengths_from_live,
+    verify_workbook,
+    write_workbook,
+)
 
 
 def _is_data_row(row: dict) -> bool:
@@ -66,14 +85,19 @@ def collect_report(
     *,
     max_expenses: int = 200,
     progress=lambda message: None,
-) -> tuple[list[ExpenseRecord], dict[str, list[dict]]]:
-    """Read every expense in a report. Returns records and live field state.
+    on_expense=None,
+    collect_header: bool = False,
+) -> tuple[list[ExpenseRecord], dict[str, list[dict]], dict[str, str]]:
+    """Read every expense in a report.
 
-    The live inventories are returned alongside the records so the caller can
-    verify the written file against the same data without a second pass.
+    Returns records, live field state, and optionally report-header facts. The
+    report page is opened once: rows already expose stable expense IDs in
+    ``data-row-key``, so each expense is opened directly instead of returning
+    through the list, selecting its row, and clicking Edit.
     """
     open_report(page, report_id)
     wait_for_report_ready(page)
+    details = report_header(page) if collect_header else {}
 
     rows = [row for row in triage_rows(page) if _is_data_row(row)]
     progress(f"{len(rows)} expense row(s) on report {report_id}")
@@ -89,12 +113,16 @@ def collect_report(
     failures: list[str] = []
 
     for index, row in enumerate(rows):
-        nav_row = expense_row_number(index)
+        known_id = row_expense_id(row)
+        row_label = known_id[:12] if known_id else f"row {expense_row_number(index)}"
         try:
-            expense_id = open_expense_edit(page, report_id, nav_row)
+            if known_id:
+                expense_id = open_expense_by_id(page, report_id, known_id)
+            else:
+                expense_id = open_expense_edit(page, report_id, expense_row_number(index))
         except Exception as exc:  # noqa: BLE001 - one bad row must not kill the export
-            failures.append(f"row {nav_row}: {exc}")
-            progress(f"  SKIP row {nav_row}: {exc}")
+            failures.append(f"{row_label}: {exc}")
+            progress(f"  SKIP {row_label}: {exc}")
             continue
         from .widgets import field_inventory
 
@@ -108,6 +136,8 @@ def collect_report(
             )
         )
         live_by_id[expense_id] = fields
+        if on_expense is not None:
+            on_expense(page, fields)
         progress(
             f"  read {expense_id[:12]}… "
             f"({len(records[-1].cells)} field(s)) {row['identity'][:44]}"
@@ -115,7 +145,7 @@ def collect_report(
 
     if failures:
         progress(f"{len(failures)} row(s) could not be read")
-    return records, live_by_id
+    return records, live_by_id, details
 
 
 def verify_fidelity(
@@ -153,16 +183,46 @@ def verify_fidelity(
     return False, "\n".join(problems)
 
 
+def finish_xlsx(out_path, report_id, records, live_by_id, details, options,
+                *, verify: bool) -> int:
+    """Write the workbook, check it re-reads to the live values, save evidence."""
+    details = {**details, "Expenses": str(len(records)),
+               "Exported": exported_at()}
+    data = WorkbookData(report_id, records, details, options,
+                        maxlengths_from_live(live_by_id))
+    columns = write_workbook(out_path, data)
+    print(f"\nwrote {out_path}  ({len(records)} expense(s), {len(columns)} columns)")
+    print(f"  columns: {[c.header for c in columns]}")
+    if verify:
+        problems = verify_workbook(out_path, data)
+        if problems:
+            print("\nWORKBOOK DOES NOT RE-READ TO LIVE VALUES:", file=sys.stderr)
+            for p in problems[:40]:
+                print(f"  {p}", file=sys.stderr)
+            return 1
+        print("  fidelity: workbook re-reads to the live values exactly")
+    else:
+        print("  fidelity check: SKIPPED (--no-verify)")
+    snapshot = out_path.with_suffix(".live.json")
+    snapshot.write_text(json.dumps({"report": report_id, "live": live_by_id,
+                                    "details": details,
+                                    "options": [[k[0], k[1], v] for k, v in options.items()]}))
+    snapshot.chmod(0o600)
+    print(f"  export-time evidence: {snapshot}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="Export a Concur expense report to CSV (read-only)."
+        description="Export a Concur expense report to CSV or xlsx (read-only)."
     )
     ap.add_argument("--report", required=True)
     ap.add_argument(
         "--out",
         type=Path,
         default=None,
-        help="output CSV path (default: expenses-<report>.csv)",
+        help="output path; .xlsx writes the workbook, anything else CSV "
+        "(default: expenses-<report>.csv)",
     )
     ap.add_argument(
         "--max",
@@ -194,19 +254,42 @@ def main() -> int:
     creds = resolve()
     banner_actions = parse_banner_actions(args.banner_action)
 
+    as_xlsx = out_path.suffix.lower() == ".xlsx"
+    details: dict[str, str] = {}
+    options: dict[tuple[str, str], list[str]] = {}
+
+    def read_options(page, fields) -> None:
+        for f in fields:
+            if f["widget"] != "combobox" or f["locked"] or f["name"] in SEARCH_FIELDS:
+                continue
+            key = (f["name"], " ".join(f["label"].split()).casefold())
+            if key in options:
+                continue
+            got = read_combobox_options(page, f)
+            options[key] = got.get("options", [])
+            progress(f"    options: {f['label']} ({len(options[key])})")
+
     with authenticated_context(
         concur_username=creds.concur_username,
         ufl_username=creds.ufl_username,
         ufl_password=creds.ufl_password,
         banner_actions=banner_actions,
     ) as page:
-        records, live_by_id = collect_report(
-            page, args.report, max_expenses=args.max, progress=progress
+        records, live_by_id, details = collect_report(
+            page, args.report, max_expenses=args.max, progress=progress,
+            on_expense=read_options if as_xlsx else None,
+            collect_header=as_xlsx,
         )
+        if as_xlsx:
+            progress(f"report: {details}")
 
     if not records:
         print("nothing exported: no readable expense rows", file=sys.stderr)
         return 1
+
+    if as_xlsx:
+        return finish_xlsx(out_path, args.report, records, live_by_id,
+                           details, options, verify=not args.no_verify)
 
     columns = write_expenses(out_path, records)
     print(

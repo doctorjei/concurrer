@@ -60,14 +60,25 @@ ROWS_JS = """() => {
             if (m) counts[m[1].toLowerCase()] = parseInt(m[2], 10);
         }
         if (!identity && !btnTexts.length) continue;
+        const key = row.getAttribute('data-row-key') || row.id || '';
         rows.push({
             identity: identity,
+            expense_id: /^[0-9A-Fa-f]+$/.test(key) ? key : '',
             counts: counts,
             buttons: btnTexts.slice(0, 8),
         });
     }
     return rows;
 }"""
+
+
+_HEX_ID = __import__('re').compile(r'[0-9A-Fa-f]+\Z')
+
+
+def row_expense_id(row: dict) -> str:
+    """Return a row's stable expense ID, or an empty string when it is absent."""
+    key = str(row.get('expense_id') or '').strip()
+    return key if _HEX_ID.fullmatch(key) else ''
 
 
 def triage_rows(page) -> list[dict]:

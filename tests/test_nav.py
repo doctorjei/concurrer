@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import unittest
 
+from unittest.mock import patch
+
 from concurrer.nav import _expense_id_in_url, expense_row_number, select_row
 
 
@@ -48,3 +50,44 @@ class NavTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExpenseReadyTests(unittest.TestCase):
+    def test_readiness_waits_for_named_fields_not_a_fixed_delay(self):
+        seen = []
+
+        class Page:
+            url = "https://example.test/expense"
+            inventories = [[], [{"name": ""}, {"name": "expenseType"}]]
+
+            def evaluate(self, _script):
+                return self.inventories.pop(0)
+
+            def wait_for_timeout(self, ms):
+                seen.append(ms)
+
+        from concurrer.nav import wait_for_expense_ready
+
+        with patch("concurrer.nav.field_inventory",
+                   side_effect=lambda page: page.evaluate("fields")):
+            fields = wait_for_expense_ready(Page(), timeout_ms=5000)
+
+        self.assertEqual(fields, [{"name": ""}, {"name": "expenseType"}])
+        self.assertEqual(seen, [500])
+
+    def test_unrendered_form_raises_instead_of_returning_empty(self):
+        class Page:
+            url = "https://example.test/expense"
+
+            def evaluate(self, _script):
+                return []
+
+            def wait_for_timeout(self, _ms):
+                return None
+
+        from concurrer.nav import wait_for_expense_ready
+
+        with patch("concurrer.nav.field_inventory",
+                   side_effect=lambda page: page.evaluate("fields")), \
+            self.assertRaises(RuntimeError):
+            wait_for_expense_ready(Page(), timeout_ms=500)
