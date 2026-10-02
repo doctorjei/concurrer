@@ -47,6 +47,8 @@ from .widgets import (
     field_inventory,
     fill_text_exact,
     select_combobox_exact,
+    select_payment_type_exact,
+    select_search_combobox_exact,
 )
 
 _FIELD_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_]*\Z")
@@ -237,9 +239,14 @@ def validate_before_save(fields: list[dict], plan: EditPlan) -> None:
 
 
 def _apply_value(page, field: dict, value: str) -> None:
-    if _norm(field["value"]) == _norm(value):
-        return
-    if field["widget"] == "combobox":
+    # Location and Payment Type reads can be transient (empty before Concur
+    # finishes populating them), so they are always set through their strict
+    # helpers rather than skipped on apparent equality.
+    if field["name"] == "location":
+        select_search_combobox_exact(page, field, value)
+    elif field["name"] == "paymentType":
+        select_payment_type_exact(page, field, value)
+    elif field["widget"] == "combobox":
         select_combobox_exact(page, field, value)
     else:
         fill_text_exact(page, field, value)

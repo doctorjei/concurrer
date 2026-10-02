@@ -172,6 +172,158 @@ def _trigger_for(field: dict) -> str:
     return ""
 
 
+OPTIONS_JS = """() => {
+  const all = Array.from(document.querySelectorAll(
+      '[role=dialog] [role=option], [role=listbox] [role=option]'));
+  const visible = all.filter(el => { const r = el.getBoundingClientRect();
+      return r.width > 3 && r.height > 3; });
+  const setsize = all.map(el => el.getAttribute('aria-setsize'))
+      .find(Boolean) || null;
+  return {texts: visible.map(el => (el.innerText || '').trim()).filter(Boolean),
+          domCount: all.length, setsize};
+}"""
+
+
+#: Search-backed combobox inputs whose options appear only after typing.
+SEARCH_INPUT_NUIEXP = {
+    "location": "field-location__input",
+}
+
+
+def select_search_combobox_exact(page, field: dict, requested: str,
+                                 timeout_ms: int = 10_000) -> str:
+    """Select the one exact suggestion from a type-to-search combobox.
+
+    Location is the current example: its suggestion list is empty until the
+    requested text is typed. This never clicks a partial or ambiguous match.
+    """
+    name = field.get("name") or ""
+    if field.get("widget") != "combobox":
+        raise ValueError(f"field {name!r} is not a combobox")
+    if field.get("locked"):
+        raise ValueError(f"field {name!r} is locked")
+    if not requested or not requested.strip():
+        raise ValueError("combobox value must not be blank")
+    assert_write_authorized(page.url)
+
+    trigger = _trigger_for(field)
+    if not trigger:
+        raise ValueError(f"field {name!r} has no stable options trigger")
+    input_nuiexp = field.get("inputNuiexp") or SEARCH_INPUT_NUIEXP.get(name, "")
+    if not input_nuiexp:
+        raise ValueError(f"field {name!r} has no stable search input")
+    trigger_locator = page.locator(f'[data-nuiexp="{trigger}"]')
+    if trigger_locator.count() != 1:
+        raise RuntimeError(f"expected one trigger for field {name!r}")
+    click_safe(page, trigger_locator, f"open options for {field['label']}")
+    page.wait_for_timeout(1200)
+    # The search input is rendered only after its picker opens.
+    search = page.locator(f'[data-nuiexp="{input_nuiexp}"]')
+    if search.count() != 1:
+        raise RuntimeError(f"expected one search box for field {name!r}")
+    search.first.fill("")
+    search.first.type(requested, delay=50)
+
+    texts: list[str] = []
+    waited = 0
+    while waited < timeout_ms:
+        got = page.evaluate(OPTIONS_JS)
+        texts = list(dict.fromkeys(got.get("texts", [])))
+        if texts:
+            break
+        page.wait_for_timeout(500)
+        waited += 500
+    try:
+        index = exact_option_position(texts, requested)
+    except ValueError as exc:
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(300)
+        raise ValueError(f"{exc} in {field['label']!r}") from exc
+
+    chosen = texts[index].split("\n")[0].strip()
+    assert_write_authorized(page.url)
+    options = page.locator(OPTIONS)
+    click_safe(page, options.nth(index), chosen)
+    page.wait_for_timeout(1200)
+    after = field_value(page, field["label"])
+    if _norm(after) != _norm(requested):
+        raise RuntimeError(
+            f"field {field['label']!r} did not take {requested!r}; now {after!r}"
+        )
+    _dismiss_location_currency_prompt(page)
+    after = field_value(page, field["label"])
+    if _norm(after) != _norm(requested):
+        raise RuntimeError(
+            f"field {field['label']!r} did not retain {requested!r}; now {after!r}"
+        )
+    return after
+
+
+def _dismiss_location_currency_prompt(page) -> bool:
+    """Cancel Concur's Location currency-change prompt without changing currency.
+
+    Choosing a location in another currency opens a modal that blocks Save.
+    This cancels that prompt only: it preserves both the selected location
+    and the existing currency. Any other dialog raises instead of being
+    dismissed blindly.
+    """
+    dialogs = page.locator("[role=alertdialog]")
+    if dialogs.count() == 0:
+        return False
+    if dialogs.count() != 1:
+        raise RuntimeError("refusing to dismiss an ambiguous dialog state")
+    text = dialogs.first.inner_text() or ""
+    if "Currency Change" not in text or "different currency" not in text:
+        raise RuntimeError(f"unexpected dialog blocking save: {text[:200]!r}")
+    cancel = dialogs.first.get_by_role("button", name="Cancel")
+    if cancel.count() != 1:
+        raise RuntimeError("location currency prompt has no single Cancel control")
+    click_safe(page, cancel, "Cancel currency change")
+    page.wait_for_timeout(1000)
+    if dialogs.count() != 0:
+        raise RuntimeError("location currency prompt did not close after Cancel")
+    return True
+
+
+def select_payment_type_exact(page, field: dict, requested: str) -> str:
+    """Select Payment Type from its container-opened option list.
+
+    This control has no stable ``__trigger`` handle; opening its container
+    reveals exactly its valid options. Opening it can also populate a default,
+    so the requested value is accepted only when it is also the one exact
+    visible option and the control reads back exactly that value.
+    """
+    name = field.get("name") or ""
+    if name != "paymentType":
+        raise ValueError(f"field {name!r} is not Payment Type")
+    if field.get("locked"):
+        raise ValueError(f"field {name!r} is locked")
+    if not requested or not requested.strip():
+        raise ValueError("combobox value must not be blank")
+    assert_write_authorized(page.url)
+
+    container = page.locator('[data-nuiexp="field-paymentType"]')
+    if container.count() != 1:
+        raise RuntimeError("expected one Payment Type control")
+    click_safe(page, container, f"open options for {field['label']}")
+    page.wait_for_timeout(1200)
+    got = page.evaluate(OPTIONS_JS)
+    texts = list(dict.fromkeys(got.get("texts", [])))
+    index = exact_option_position(texts, requested)
+    chosen = texts[index].split("\n")[0].strip()
+    if _norm(field_value(page, field["label"])) != _norm(requested):
+        assert_write_authorized(page.url)
+        options = page.locator(OPTIONS)
+        click_safe(page, options.nth(index), chosen)
+        page.wait_for_timeout(1200)
+    after = field_value(page, field["label"])
+    if _norm(after) != _norm(requested):
+        raise RuntimeError(
+            f"field {field['label']!r} did not take {requested!r}; now {after!r}"
+        )
+    return after
+
+
 def select_combobox_exact(page, field: dict, requested: str) -> str:
     """Commit one uniquely exact normalized option and verify its displayed value.
 
@@ -298,18 +450,6 @@ def fill_text(page, field: dict, value: str) -> bool:
         return False
     loc.first.fill(value)
     return True
-
-
-OPTIONS_JS = """() => {
-  const all = Array.from(document.querySelectorAll(
-      '[role=dialog] [role=option], [role=listbox] [role=option]'));
-  const visible = all.filter(el => { const r = el.getBoundingClientRect();
-      return r.width > 3 && r.height > 3; });
-  const setsize = all.map(el => el.getAttribute('aria-setsize'))
-      .find(Boolean) || null;
-  return {texts: visible.map(el => (el.innerText || '').trim()).filter(Boolean),
-          domCount: all.length, setsize};
-}"""
 
 
 class OptionsReadError(RuntimeError):

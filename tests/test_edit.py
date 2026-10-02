@@ -12,6 +12,7 @@ from concurrer.edit import (
     parse_assignment,
     persist_and_verify_plan,
     validate_before_save,
+    _apply_value,
 )
 
 
@@ -180,3 +181,59 @@ class PersistAndVerifyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ApplyValueTests(unittest.TestCase):
+    def test_location_uses_exact_search_selection(self):
+        field = form_field("location", "City of Purchase", "")
+        with (
+            patch("concurrer.edit.select_search_combobox_exact", return_value="Kyoto, JAPAN") as search,
+            patch("concurrer.edit.select_combobox_exact") as fixed,
+            patch("concurrer.edit.fill_text_exact") as text,
+        ):
+            _apply_value(None, field, "Kyoto, JAPAN")
+        search.assert_called_once_with(None, field, "Kyoto, JAPAN")
+        fixed.assert_not_called()
+        text.assert_not_called()
+
+    def test_unstable_location_read_is_set_not_skipped(self):
+        field = form_field("location", "City of Purchase", "Kyoto, JAPAN")
+        with (
+            patch("concurrer.edit.select_search_combobox_exact") as search,
+            patch("concurrer.edit.select_combobox_exact") as fixed,
+            patch("concurrer.edit.fill_text_exact") as text,
+        ):
+            _apply_value(None, field, "Kyoto, JAPAN")
+        search.assert_called_once_with(None, field, "Kyoto, JAPAN")
+        fixed.assert_not_called()
+        text.assert_not_called()
+
+    def test_unstable_payment_read_is_set_not_skipped(self):
+        field = form_field("paymentType", "Payment Type", "Personal Funds")
+        with (
+            patch("concurrer.edit.select_payment_type_exact",
+                  return_value="Personal Funds") as payment,
+            patch("concurrer.edit.select_search_combobox_exact") as search,
+            patch("concurrer.edit.select_combobox_exact") as fixed,
+            patch("concurrer.edit.fill_text_exact") as text,
+        ):
+            _apply_value(None, field, "Personal Funds")
+        payment.assert_called_once_with(None, field, "Personal Funds")
+        search.assert_not_called()
+        fixed.assert_not_called()
+        text.assert_not_called()
+
+    def test_payment_type_uses_its_container_helper(self):
+        field = form_field("paymentType", "Payment Type", "")
+        with (
+            patch("concurrer.edit.select_search_combobox_exact") as search,
+            patch("concurrer.edit.select_payment_type_exact",
+                  return_value="Personal Funds") as payment,
+            patch("concurrer.edit.select_combobox_exact") as fixed,
+            patch("concurrer.edit.fill_text_exact") as text,
+        ):
+            _apply_value(None, field, "Personal Funds")
+        payment.assert_called_once_with(None, field, "Personal Funds")
+        search.assert_not_called()
+        fixed.assert_not_called()
+        text.assert_not_called()
