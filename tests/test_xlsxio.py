@@ -98,7 +98,8 @@ class XlsxTests(unittest.TestCase):
         write_workbook(self.path, data())
         wb = load_workbook(self.path)
         self.assertEqual(wb.sheetnames,
-                         [EXPENSES, DETAILS, CUSTOMIZATION, LISTS, "Variants"])
+                         [EXPENSES, "Meals & Per Diem", DETAILS, CUSTOMIZATION,
+                          LISTS, "Variants", "Orig"])
         self.assertEqual(wb[LISTS].sheet_state, "hidden")
         self.assertEqual(wb["Variants"].sheet_state, "hidden")
         for name in (DETAILS, CUSTOMIZATION):
@@ -117,6 +118,9 @@ class XlsxTests(unittest.TestCase):
         comment = ws.cell(row=2, column=headers.index("Comment") + 1)
         self.assertTrue(date.protection.locked)
         self.assertFalse(comment.protection.locked)
+        # Blocked cells are black with red type.
+        self.assertEqual(date.fill.fgColor.rgb, "00000000")
+        self.assertEqual(date.font.color.rgb, "00FF0000")
         # Type-specific cells stay editable: a type change can make them apply.
         days = ws.cell(row=2, column=headers.index("Days/Nights") + 1)
         self.assertFalse(days.protection.locked)
@@ -128,13 +132,21 @@ class XlsxTests(unittest.TestCase):
         self.assertTrue(any(f.startswith("Lists!") for f in formulas))
         rules = [r.formula[0] for rng in ws.conditional_formatting
                  for r in rng.rules]
-        self.assertTrue(any("COUNTIFS(Customization!$A:$A" in r for r in rules))
+        self.assertTrue(any("COUNTIFS('Backend Data'!$A:$A" in r for r in rules))
+        # Full state system: required-empty pink, required-filled green,
+        # optional grey, not-applicable grey/red, list/whole-number reds.
+        fills = [r.dxf.fill.fgColor.rgb for rng in ws.conditional_formatting
+                 for r in rng.rules if r.dxf and r.dxf.fill and r.dxf.fill.fgColor]
+        for expected in ("00F8D7DA", "00C6EFCE", "00F2F2F2", "00D9D9D9", "00FF9999"):
+            self.assertIn(expected, fills)
+        self.assertTrue(any('="Yes",FALSE)' in r for r in rules))
+        self.assertTrue(any("COUNTIF(Lists!" in r for r in rules))
 
     def test_customization_covers_every_type(self):
-        types = {row[0] for row in customization_rows({})}
+        types = {row[0] for row in customization_rows([gt(), air()], {})}
         with_customs = {t for t, fields in TYPE_FIELDS.items() if fields}
         self.assertEqual(types, with_customs)
-        rows = {(r[0], r[1]): r for r in customization_rows({})}
+        rows = {(r[0], r[1]): r for r in customization_rows([gt(), air()], {})}
         self.assertEqual(rows[("Airfare", "Variant")][2:5],
                          ("Type of Class", "custom20", "Yes"))
 
@@ -209,10 +221,10 @@ class XlsxTests(unittest.TestCase):
         self.assertIn("Days/Nights", [c.header for c in plan_columns([gt()])])
 
     def test_customization_routes_day_night_fields_to_merged_header(self):
-        rows = {(t, h, f) for t, h, _l, f, *_ in customization_rows({})}
+        rows = {(t, h, f) for t, h, _l, f, *_ in customization_rows([gt(), air()], {})}
         self.assertIn(("Lodging - Group", "Days/Nights", "custom24"), rows)
         self.assertIn(("Lodging - Group", "# Rooms", "custom28"), rows)
-        opts = {(t, h): o for t, h, _l, _f, _r, o in customization_rows({})}
+        opts = {(t, h): o for t, h, _l, _f, _r, o in customization_rows([gt(), air()], {})}
         self.assertIn("Van", opts[("Car Rental", "Variant")])
         # Same label, different lists: options must come per type.
         self.assertNotIn(("Travel Meals - Domestic",
@@ -222,7 +234,7 @@ class XlsxTests(unittest.TestCase):
         from concurrer.xlsxio import OPTIONS_BY_LABEL
         self.assertIsNone(OPTIONS_BY_LABEL[("custom17", "departure time (first day of travel)")])
 
-    def test_per_diem_fields_left_off_but_row_kept(self):
+    def test_per_diem_fields_live_on_meals_sheet_not_expenses(self):
         meals = ExpenseRecord("EEEE5555", REPORT, 5, [
             cell("expenseType", "Expense Type", "Travel Meals - Domestic"),
             cell("custom12", "Business Purpose", "Student Life"),
@@ -239,9 +251,8 @@ class XlsxTests(unittest.TestCase):
         self.assertEqual(verify_workbook(self.path, d), [])
         from concurrer.xlsxio import read_workbook
         _, rows = read_workbook(self.path)
-        self.assertIn("EEEE5555", rows)  # the expense row itself stays
-        self.assertNotIn(("custom24", "Number of Breakfasts"), rows["EEEE5555"])
-        rows_c = {(t, h) for t, h, *_ in customization_rows({})}
+        self.assertNotIn("EEEE5555", rows)  # meal rows never feed write-back
+        rows_c = {(t, h) for t, h, *_ in customization_rows([gt(), air()], {})}
         self.assertNotIn(("Travel Meals - Domestic", "Number of Breakfasts"), rows_c)
         self.assertNotIn(("All Inclusive Per Diem (Meals/Lodging)", "Days/Nights"), rows_c)
 
@@ -283,11 +294,11 @@ class XlsxTests(unittest.TestCase):
         headers = [c.header for c in plan_columns([party, group])]
         self.assertIn("# Attendees", headers)
         self.assertIn("# Rooms", headers)
-        rows = {(t, h) for t, h, *_ in customization_rows({})}
+        rows = {(t, h) for t, h, *_ in customization_rows([gt(), air()], {})}
         self.assertIn(("Food & Beverages - Lunch", "# Attendees"), rows)
         self.assertIn(("Lodging - Group", "# Rooms"), rows)
         self.assertIn(("Fuel - State Vehicle", "Vehicle Govt #"), rows)
-        labels = {(r[0], r[1]): r[2] for r in customization_rows({})}
+        labels = {(r[0], r[1]): r[2] for r in customization_rows([gt(), air()], {})}
         self.assertEqual(labels[("Fuel - State Vehicle", "Vehicle Govt #")],
                          "State Vehicle/Decal/Vessel Number")
 
@@ -310,6 +321,85 @@ class XlsxTests(unittest.TestCase):
                          ["12 months or less", "More than 12 months"])
         # GT row keeps its value, now under Variant.
         self.assertEqual(ws.cell(row=2, column=headers.index("Variant") + 1).value, "Taxi")
+
+
+    def test_sparse_standard_fields_use_live_lookup_not_static_grey(self):
+        write_workbook(self.path, data())
+        wb = load_workbook(self.path)
+        ws = wb[EXPENSES]
+        headers = [c.value for c in ws[1]]
+        loc = headers.index("Location") + 1
+        # Ground Transportation row has no Location: white statically, grey by rule.
+        gt_cell = ws.cell(row=2, column=loc)
+        self.assertIsNone(gt_cell.value)
+        self.assertNotEqual(
+            (gt_cell.fill.fgColor.rgb if gt_cell.fill.patternType else None),
+            "00D9D9D9")
+        loc_rules = [r.formula[0] for rng in ws.conditional_formatting
+                     for r in rng.rules
+                     if f"{gt_cell.column_letter}$1" in r.formula[0]]
+        self.assertTrue(any("COUNTIFS('Backend Data'!$A:$A" in f for f in loc_rules))
+        # The grey rule only fires for types Customization knows.
+        self.assertTrue(any("$A:$A," in f and ">0" in f for f in loc_rules))
+
+    def test_customization_records_observed_standard_fields(self):
+        rows = {(t, h) for t, h, *_ in customization_rows([gt(), air()], {})}
+        self.assertIn(("Airfare", "Location"), rows)
+        self.assertNotIn(("Ground Transportation", "Location"), rows)
+        self.assertIn(("Ground Transportation", "vendor"), rows)
+        undef = ExpenseRecord("JJJJ0000", REPORT, 10, [
+            cell("expenseType", "Expense Type", "Undefined"),
+            cell("businessPurpose", "*Purchase Description/Justification (64 char max)", "x"),
+        ])
+        urows = {(t, h) for t, h, *_ in customization_rows([undef], {})}
+        self.assertIn(("Undefined", "Desc./Justification"), urows)
+
+    def test_orig_sheet_backs_blocked_deviation_rules(self):
+        write_workbook(self.path, data())
+        wb = load_workbook(self.path)
+        self.assertEqual(wb["Orig"].sheet_state, "hidden")
+        ws, orig = wb[EXPENSES], wb["Orig"]
+        headers = [c.value for c in ws[1]]
+        self.assertEqual([c.value for c in orig[1]], headers)
+        date = headers.index("Date") + 1
+        self.assertEqual(orig.cell(row=2, column=date).value, "09/21/2026")
+        dev = [r.formula[0] for rng in ws.conditional_formatting
+               for r in rng.rules if "Orig!" in r.formula[0]]
+        self.assertTrue(dev)
+        self.assertTrue(all("MATCH(" in f for f in dev))
+
+    def test_customization_key_column_backs_required_lookup(self):
+        write_workbook(self.path, data())
+        custom = load_workbook(self.path)["Backend Data"]
+        self.assertEqual(custom["G3"].value, "Key")
+        self.assertEqual(custom["G4"].value, '=A4&"|"&B4')
+
+    def test_meal_rows_move_to_read_only_sheet(self):
+        meal = ExpenseRecord("MMMM0000", REPORT, 9, [
+            cell("expenseType", "Expense Type", "Travel Meals - International"),
+            cell("transactionDate", "Transaction Date", "07/24/2026", locked=True),
+            cell("custom24", "Number of Breakfasts", "1"),
+            cell("custom17", "Departure Time (first day of travel)", "5. Whole Day"),
+        ])
+        d = WorkbookData(REPORT, [gt(), meal])
+        write_workbook(self.path, d)
+        self.assertEqual(verify_workbook(self.path, d), [])
+        wb = load_workbook(self.path)
+        ws, ms = wb[EXPENSES], wb["Meals & Per Diem"]
+        exp_ids = [r[0].value for r in ws.iter_rows(min_row=2)]
+        self.assertNotIn("MMMM0000", exp_ids)
+        self.assertEqual(ms["A1"].value, "READ-ONLY (Do not edit)")
+        self.assertTrue(ms.protection.sheet)
+        mheaders = [c.value for c in ms[3]]
+        self.assertIn("Number of Breakfasts", mheaders)
+        self.assertIn("Departure Time (first day of travel)", mheaders)
+        mrow = {h: v for h, v in zip(mheaders, [c.value for c in ms[4]])}
+        self.assertEqual(mrow["Expense Type"], "Travel Meals - International")
+        self.assertEqual(mrow["Number of Breakfasts"], "1")
+        # Meal rows are invisible to write-back reads.
+        from concurrer.xlsxio import read_workbook
+        _, rows = read_workbook(self.path)
+        self.assertNotIn("MMMM0000", rows)
 
 
 if __name__ == "__main__":

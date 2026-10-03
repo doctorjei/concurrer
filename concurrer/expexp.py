@@ -60,6 +60,7 @@ from .xlsxio import (
     WorkbookData,
     exported_at,
     maxlengths_from_live,
+    split_meal_records,
     verify_workbook,
     write_workbook,
 )
@@ -186,7 +187,9 @@ def verify_fidelity(
 def finish_xlsx(out_path, report_id, records, live_by_id, details, options,
                 *, verify: bool) -> int:
     """Write the workbook, check it re-reads to the live values, save evidence."""
-    details = {**details, "Expenses": str(len(records)),
+    _exp, _meals = split_meal_records(records)
+    details = {**details, "Expenses": str(len(_exp)),
+               "Meals & per-diem rows": str(len(_meals)),
                "Exported": exported_at()}
     data = WorkbookData(report_id, records, details, options,
                         maxlengths_from_live(live_by_id))

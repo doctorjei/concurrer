@@ -114,7 +114,7 @@ only opens a menu. It passes only with **both**
 | `login.py` | `sign_in_page()` + `authenticated_context()` + `login()` |
 | `safety.py` | Three-tier click guard; Test-Report + Concur-origin-scoped write grant |
 | `nav.py` | Open one expense by one-based row or stable ID; bulk-wizard rejected |
-| `widgets.py` | Field inventory + strict write helpers (`select_combobox_exact`, `fill_text_exact`) |
+| `widgets.py` | Field inventory + strict write helpers (`select_combobox_exact`, `select_search_combobox_exact` for Location, `select_payment_type_exact`, `fill_text_exact`) |
 | `type_map.py` / `type_map.json` | Versioned 67-type custom-field schema + loss/compat/conditional helpers |
 | `banners.py` | Blocking-banner inspection; presents by default, acts only on an explicit `--banner-action` |
 | `fields.py` | Field inventory + option reader |
@@ -125,8 +125,12 @@ only opens a menu. It passes only with **both**
 | `classify.py` | Read-only vendor/amount/detail table for expenses of a given type (especially `Undefined`) |
 | `edit.py` | Single-expense edit planner; persistence is structurally Test Report-only |
 | `csvio.py` | Browser-free CSV schema, identity validation, and fresh-live diff engine |
-| `expexp.py` | Read-only full-report CSV export with re-read fidelity verification |
+| `xlsxio.py` | Browser-free operator workbook: Expenses / Meals / Report Details / Backend Data, validation, cell-state colors |
+| `type_options.json` | Captured dropdown option lists per expense type (Test Report sweep 2026-10-02) |
+| `expexp.py` | Read-only full-report export (CSV **or** `.xlsx`) with re-read fidelity verification |
+| `probereport.py` | Read-only report-header + per-type option probe |
 | `pushcsv.py` | CSV dry-run / Test-Report-only batch driver over `edit.py`'s save path |
+| `pushxlsx.py` | Workbook dry-run / Test-Report-only batch driver; routes columns to fields by each row's expense type |
 | `probereceipts.py` | Read-only receipt/upload surface probe |
 | `receipts.py` | Per-expense receipt attach; dry-run default, Test-Report-only `--commit` |
 | `savebtn.py` | Dumps the Save split-button; `--menu` reads its variants |
@@ -194,6 +198,89 @@ reviewed plan immediately before Save. Concur has no batch transaction: if a
 later row fails, the command stops and names earlier rows that are already
 **saved and verified**; it never tries a fictional rollback.
 
+### xlsx workbook export (operator-facing)
+
+`expexp` writes an `.xlsx` workbook instead of a CSV when the output path ends
+in `.xlsx`. It is still **read-only** and still verifies by re-reading what it
+wrote against the live values it was written from.
+
+```bash
+.venv/bin/python -m concurrer.expexp --report <REPORT_ID> --out report.xlsx
+```
+
+Sheets, in order:
+
+| Sheet | Contents |
+|---|---|
+| `Expenses` | One row per expense, UF column order. Identity is the last column (`Expense ID`). |
+| `Meals & Per Diem` | **READ-ONLY (Do not edit).** Per-diem rows (Travel Meals, All Inclusive Per Diem, Per Diem/Meal Adjustment) live here, with their Departure/Return Time and meal-count fields shown for the first time. Never read by write-back. |
+| `Report Details` | **READ ONLY.** Report-wide facts including `Report ID`, which write-back should take from here. |
+| `Backend Data` | **READ ONLY.** (expense type, column) map for all 67 types plus every standard field observed on the report, with required flags and option lists. |
+| `Lists`, `Variants`, `Orig` | Hidden. Dropdown sources, per-type Variant lists, and export-time values backing the blocked-cell check. |
+
+Columns are type-routed merges: `custom20` becomes one `Variant` column, the
+two `custom29` questions become `Shared/Accompanied?`, day/night counts become
+`Days/Nights`. `vendor` merges Concur's locked `vendorName` with the unlocked
+Airfare vendor-directory field. Per-diem fields are excluded from `Expenses`.
+
+Cell states are live conditional formatting, so they follow edits and Expense
+Type changes:
+
+| State | Appearance |
+|---|---|
+| Required, filled appropriately | light green |
+| Required, empty | pink |
+| Invalid — value where prohibited, off-list, non-whole, or a blocked cell that changed | bright red |
+| Optional, filled or not | very light grey |
+| Field absent from this row's type | grey (red if it holds a value) |
+| Blocked by Concur | black background, red type |
+
+**Known limitations:** Travel Allowance / per diem is out of scope (the Meals
+sheet displays generated rows; it never creates, regenerates or edits them).
+Changing a row to a type whose type-specific columns are absent from the sheet
+needs a re-export. A column whose options differ per type (e.g. Departure
+Time) gets no fixed dropdown. LibreOffice cannot resize or format on a
+protected sheet; Excel can.
+
+#### Writing back from the workbook
+
+`pushxlsx` applies workbook edits to Concur. It is the same batch driver as
+`pushcsv` — same preflight, same re-diff before Save, same honest per-row
+outcomes, no rollback — with a different reader:
+
+```bash
+.venv/bin/python -m concurrer.pushxlsx --xlsx report.xlsx           # fresh-live dry run
+.venv/bin/python -m concurrer.pushxlsx --xlsx test-report.xlsx --commit
+```
+
+The report ID is read from **Report Details**, never from a command-line
+option, so no argument can aim a write at a report the workbook never named.
+`--commit` is Test-Report-only and fails before credentials or a browser for
+any other report.
+
+The workbook's columns are operator-facing headers, but Concur's are field
+names, and some columns are **merged**: `Days/Nights` is `custom28` on some
+expense types and `custom24` on others, and `custom28` itself carries two
+different meanings. So every column is routed **per row, by that row's own
+expense type**, using the Backend Data sheet — the same (type, column) table
+the cell colours look up, which keeps the colours and the writer from drifting.
+
+Three situations are refused rather than guessed:
+
+- a non-blank merged cell with no route for that row's type (re-export so the
+  column matches);
+- a column Backend Data maps to two different fields for one type;
+- two columns that collapse onto one Concur field with disagreeing values.
+
+A *blank* merged cell on a type it does not apply to is simply skipped — no
+change was intended. Per-diem rows are invisible here by construction: they
+live on the read-only Meals sheet, which the reader never opens.
+
+**Not supported:** bulk `expenseType` changes. `csvio` refuses them and points
+at `edit.py`, because a type change irreversibly drops type-specific custom
+values and the per-row routing is itself keyed on that type. Submit, and
+everything else in the permanent deny tier, is untouched.
+
 ### Receipts
 
 Attaches one local receipt file to one expense, by stable expense ID. The
@@ -229,8 +316,31 @@ Evidence lands in `~/.config/concur/discover/` as JSON. **Screenshots from
 `/nui/` pages render blank** (the SPA layout defeats full-page capture) — the
 JSON dumps are the reliable record, not the PNGs.
 
+## Tests
+
+Browser-free, standard library only — no `pytest`, no network, no browser:
+
+```bash
+.venv/bin/python -m unittest discover -s tests -q
+```
+
+Expect `OK`. The run **prints `[safety] write grant ACTIVE` and `BLOCKED` lines
+to stdout as part of normal operation** — those are the guard's own output
+being exercised, not failures. The result line goes to **stderr**:
+
+```bash
+.venv/bin/python -m unittest discover -s tests -q 2>&1 >/dev/null | grep -E '^(OK|FAILED|Ran )'
+```
+
 ## Things that will bite you
 
+- **`ws.cell(row, col, value=None)` is a silent no-op in openpyxl.** It only
+  assigns when the value is not `None`, so any code that rewrites cells can
+  leave stale values behind and desynchronise headers from data. Assign
+  through the `.value` property instead.
+- **Chromium's system libraries live in the container rootfs and are wiped by a
+  rebuild.** Re-run `sudo .venv/bin/playwright install-deps chromium`; the venv
+  and browsers under `$HOME` survive.
 - **Duo: do not block the foreground on a full run.** When device trust has
   lapsed, a run waits minutes for the phone tap. Run the command in the
   background and tail its log for `Duo number: NNN`, then surface the number

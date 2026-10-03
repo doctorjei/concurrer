@@ -1,4 +1,4 @@
-"""Operator-facing xlsx workbook: Expenses / Report Details / Customization.
+"""Operator-facing xlsx workbook: Expenses / Report Details / Backend Data.
 
 Pure and browser-free: everything here works from data already read by
 ``expexp.collect_report()``. Design: ``plans/xlsx-workbook-format.md``.
@@ -10,7 +10,7 @@ Sheets
   ``__row``/``__locked``/``__required`` packing: lock and required state are
   shown as cell styling and sheet protection instead.
 * **Report Details** — READ ONLY report-wide facts, including the report ID.
-* **Customization** — READ ONLY (expense type, column) map for **all** types
+* **Backend Data** — READ ONLY (expense type, column) map for **all** types
   in the type map, so highlighting keeps working after a type change.
 * **Lists** (hidden) — dropdown sources and the header→field column map that
   read-back (and later write-back) keys on.
@@ -47,7 +47,7 @@ from .type_map import TYPE_FIELDS
 
 EXPENSES = "Expenses"
 DETAILS = "Report Details"
-CUSTOMIZATION = "Customization"
+CUSTOMIZATION = "Backend Data"
 LISTS = "Lists"
 READ_ONLY = "READ ONLY"
 ID_HEADER = "Expense ID"
@@ -80,11 +80,62 @@ DISPLAY = {
 #: Search-backed comboboxes: their "options" are search results, not a list.
 SEARCH_FIELDS = frozenset({"location", "vendor", "travelRequestExpenseId"})
 
-FILL_LOCKED = PatternFill("solid", fgColor="E3E7ED")
+FILL_BLOCKED = PatternFill("solid", fgColor="000000")
+FONT_BLOCKED = Font(color="FF0000")
 FILL_REQUIRED = PatternFill("solid", fgColor="F8D7DA")
+FILL_GOOD = PatternFill("solid", fgColor="C6EFCE")
+FILL_OPTIONAL = PatternFill("solid", fgColor="F2F2F2")
 FILL_NA = PatternFill("solid", fgColor="D9D9D9")
 FILL_WRONG = PatternFill("solid", fgColor="FF9999")
 FILL_HEADER = PatternFill("solid", fgColor="1F3864")
+ORIG = "Orig"
+MEALS = "Meals & Per Diem"
+MEALS_BANNER = "READ-ONLY (Do not edit)"
+
+#: Expense types whose rows live on the read-only Meals sheet instead of
+#: Expenses (operator 2026-10-02). Their per-diem fields are display-only:
+#: write-back never reads this sheet.
+PER_DIEM_TYPES = frozenset({
+    "Travel Meals - International",
+    "Travel Meals - Domestic",
+    "All Inclusive Per Diem (Meals/Lodging)",
+    "Per Diem/Meal Adjustment",
+})
+
+
+def is_meal_record(record: ExpenseRecord) -> bool:
+    """Whether this record belongs on the read-only Meals sheet."""
+    return next(
+        (c.value for c in record.cells if c.name == "expenseType"),
+        "") in PER_DIEM_TYPES
+
+
+def split_meal_records(
+    records: Sequence[ExpenseRecord],
+) -> tuple[list[ExpenseRecord], list[ExpenseRecord]]:
+    """Partition records into (expenses, meals) preserving order."""
+    expenses, meals = [], []
+    for record in records:
+        (meals if is_meal_record(record) else expenses).append(record)
+    return expenses, meals
+
+
+def meal_extra_columns(
+    meals: Sequence[ExpenseRecord],
+) -> list[tuple[str, str, str]]:
+    """(header, field, normalized label) for per-diem fields, first-seen order."""
+    out: list[tuple[str, str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for record in meals:
+        for c in record.cells:
+            if not is_per_diem(c.name, c.label):
+                continue
+            key = (c.name, _norm(c.label))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append((" ".join(c.label.split()), c.name, key[1]))
+    return out
 
 
 def _norm(text: str) -> str:
@@ -330,14 +381,40 @@ def cell_for(record: ExpenseRecord, column: Column):
 
 
 def customization_rows(
+    records: Sequence[ExpenseRecord],
     options: Mapping[tuple[str, str], Sequence[str]],
 ) -> list[tuple[str, str, str, str, str, str]]:
     """(type, column header, Concur label, Concur field, required, options).
 
     Column B (our header) is what the Expenses conditional formatting looks
     up; the Concur label is kept beside it because many headers are renamed.
+
+    Custom slots cover every type in the type map. Standard (non-custom)
+    fields are only known where observed, so they are recorded per observed
+    (type, column): a type with no rows at all is "unknown", never
+    not-applicable, and the Expenses lookup treats it as such.
     """
     rows = []
+    columns = plan_columns(records)
+    seen: set[tuple[str, str]] = set()
+    for record in records:
+        expense_type = next(
+            (c.value for c in record.cells if c.name == "expenseType"), "")
+        for col in columns:
+            if col.header == ID_HEADER or col.field.startswith("custom"):
+                continue
+            cell = cell_for(record, col)
+            if cell is None or (expense_type, col.header) in seen:
+                continue
+            seen.add((expense_type, col.header))
+            rows.append((
+                expense_type,
+                col.header,
+                " ".join(cell.label.split()),
+                cell.name,
+                "Yes" if cell.required else "No",
+                "",
+            ))
     for expense_type in sorted(TYPE_FIELDS):
         for f in TYPE_FIELDS[expense_type]:
             if is_per_diem(f.name, f.label):
@@ -406,15 +483,20 @@ def _protect(ws) -> None:
 
 def build_workbook(data: WorkbookData) -> Workbook:
     columns = plan_columns(data.records)
+    exp_recs, meal_recs = split_meal_records(data.records)
+    meal_extras = meal_extra_columns(meal_recs)
     wb = Workbook()
     ws = wb.active
     ws.title = EXPENSES
+    meals = wb.create_sheet(MEALS)
     details = wb.create_sheet(DETAILS)
     custom = wb.create_sheet(CUSTOMIZATION)
     lists = wb.create_sheet(LISTS)
     lists.sheet_state = "hidden"
     variants = wb.create_sheet(VARIANTS)
     variants.sheet_state = "hidden"
+    orig = wb.create_sheet(ORIG)
+    orig.sheet_state = "hidden"
     vlists = variant_lists()
     tallest = max((len(v) for v in vlists.values()), default=1)
     for ci, (expense_type, options) in enumerate(vlists.items(), start=1):
@@ -429,6 +511,7 @@ def build_workbook(data: WorkbookData) -> Workbook:
         lists.cell(row=i, column=2, value=col.field)
         lists.cell(row=i, column=3, value=col.meaning)
     next_list_col = 5
+    list_ranges: dict[str, str] = {}
 
     def list_range(values: Sequence[str], title: str) -> str:
         nonlocal next_list_col
@@ -439,16 +522,41 @@ def build_workbook(data: WorkbookData) -> Workbook:
         next_list_col += 1
         return f"{LISTS}!${letter}$2:${letter}${len(values) + 1}"
 
+    # --- Meals & Per Diem (read-only display; never an input to write-back).
+    meals["A1"] = MEALS_BANNER
+    meals["A1"].font = Font(bold=True, italic=True)
+    meal_exp_cols = [c for c in columns if c.header != ID_HEADER]
+    meal_headers = ([c.header for c in meal_exp_cols]
+                    + [h for h, _, _ in meal_extras] + [ID_HEADER])
+    _header_row(meals, 3, meal_headers)
+    for r, record in enumerate(meal_recs, start=4):
+        for ci, col in enumerate(meal_exp_cols, start=1):
+            cell = cell_for(record, col)
+            meals.cell(row=r, column=ci, value=cell.value if cell else None)
+        by_key = {(c.name, _norm(c.label)): c.value for c in record.cells}
+        for ei, (_, name, label) in enumerate(meal_extras):
+            meals.cell(row=r, column=len(meal_exp_cols) + 1 + ei,
+                       value=by_key.get((name, label), ""))
+        meals.cell(row=r, column=len(meal_headers), value=record.expense_id)
+        for ci in range(1, len(meal_headers) + 1):
+            target = meals.cell(row=r, column=ci)
+            target.protection = target.protection.copy(locked=True)
+    _fit_columns(meals, 3)
+    meals.freeze_panes = "A4"
+    _protect(meals)
+
     # --- Expenses.
     _header_row(ws, 1, [c.header for c in columns])
-    n = len(data.records)
+    n = len(exp_recs)
     last = n + 1
     type_letter = get_column_letter(
         next(i for i, c in enumerate(columns, 1) if c.field == "expenseType"))
-    for r, record in enumerate(data.records, start=2):
+    for r, record in enumerate(exp_recs, start=2):
         for ci, col in enumerate(columns, start=1):
             if col.header == ID_HEADER:
-                ws.cell(row=r, column=ci, value=record.expense_id).fill = FILL_LOCKED
+                idcell = ws.cell(row=r, column=ci, value=record.expense_id)
+                idcell.fill = FILL_BLOCKED
+                idcell.font = FONT_BLOCKED
                 continue
             cell = cell_for(record, col)
             target = ws.cell(row=r, column=ci, value=cell.value if cell else None)
@@ -460,13 +568,8 @@ def build_workbook(data: WorkbookData) -> Workbook:
                 unlocked = cell is None or not cell.locked
             target.protection = target.protection.copy(locked=not unlocked)
             if cell is not None and cell.locked:
-                target.fill = FILL_LOCKED
-            elif cell is not None and cell.required and not cell.value.strip():
-                target.fill = FILL_REQUIRED
-            elif cell is None and not (
-                (col.type_specific and col.header not in UNIVERSAL_MERGES)
-                or col.field.startswith("custom")):
-                target.fill = FILL_NA
+                target.fill = FILL_BLOCKED
+                target.font = FONT_BLOCKED
 
     for ci, col in enumerate(columns, start=1):
         letter = get_column_letter(ci)
@@ -523,7 +626,8 @@ def build_workbook(data: WorkbookData) -> Workbook:
                 ws.add_data_validation(dv)
                 dv.add(rng)
         elif opts:
-            dv = DataValidation(type="list", formula1=list_range(opts, col.header),
+            list_ranges[col.header] = list_range(opts, col.header)
+            dv = DataValidation(type="list", formula1=list_ranges[col.header],
                                 allow_blank=True, showErrorMessage=True)
             dv.error = f"Choose a value from the {col.header} list."
             dv.errorTitle = col.header
@@ -538,18 +642,79 @@ def build_workbook(data: WorkbookData) -> Workbook:
                 dv.error = f"{col.header}: at most {maxlen} characters."
                 ws.add_data_validation(dv)
                 dv.add(rng)
-        if col.type_specific and col.header not in UNIVERSAL_MERGES:
-            # Live applicability against Customization (A=type, B=column).
-            # Universal merges are applicable to every row by construction.
-            na = (f'COUNTIFS({_q(CUSTOMIZATION)}!$A:$A,${type_letter}2,'
-                  f'{_q(CUSTOMIZATION)}!$B:$B,{letter}$1)=0')
+        if col.header != ID_HEADER:
+            # Cell-state system (operator 2026-10-02), evaluated live so it
+            # follows edits and Expense Type changes. Precedence runs top to
+            # bottom; the reds stop further rules.
+            cu = _q(CUSTOMIZATION)
+            known = (f'COUNTIFS({cu}!$A:$A,${type_letter}2)>0')
+            hasrow = (f'COUNTIFS({cu}!$A:$A,${type_letter}2,'
+                       f'{cu}!$B:$B,{letter}$1)>0')
+            na = f'AND({known},NOT({hasrow}))'
+            req = (f'IFERROR(INDEX({cu}!$E:$E,MATCH(${type_letter}2&"|"&'
+                   f'{letter}$1,{cu}!$G:$G,0))="Yes",FALSE)')
+            ok = f'NOT({na})'
+            ws.conditional_formatting.add(
+                rng, FormulaRule(
+                    formula=[f'AND({letter}2<>"",{ok},'
+                             f'COUNTIF({list_ranges[col.header]},{letter}2)=0)']
+                    if col.header in list_ranges else ['FALSE'],
+                    fill=FILL_WRONG, stopIfTrue=True))
+            ws.conditional_formatting.add(
+                rng, FormulaRule(
+                    formula=[f'AND({letter}2<>"",'
+                             f'IFERROR(OR(INT({letter}2)<>{letter}2,'
+                             f'{letter}2<0),TRUE))']
+                    if col.header in WHOLE_NUMBER else ['FALSE'],
+                    fill=FILL_WRONG, stopIfTrue=True))
             ws.conditional_formatting.add(
                 rng, FormulaRule(formula=[f'AND({na},{letter}2<>"")'],
                                  fill=FILL_WRONG, stopIfTrue=True))
             ws.conditional_formatting.add(
-                rng, FormulaRule(formula=[f'AND({na},{letter}2="")'], fill=FILL_NA))
+                rng, FormulaRule(formula=[f'AND({ok},{req},{letter}2="")'],
+                                 fill=FILL_REQUIRED))
+            ws.conditional_formatting.add(
+                rng, FormulaRule(formula=[f'AND({ok},{req},{letter}2<>"")'],
+                                 fill=FILL_GOOD))
+            ws.conditional_formatting.add(
+                rng, FormulaRule(formula=[f'AND({na},{letter}2="")'],
+                                 fill=FILL_NA))
+            ws.conditional_formatting.add(
+                rng, FormulaRule(formula=[f'AND({ok},NOT({req}))'],
+                                 fill=FILL_OPTIONAL))
 
     _fit_columns(ws, 1)
+    for ci, col in enumerate(columns, start=1):
+        orig.cell(row=1, column=ci, value=col.header)
+    for r, record in enumerate(exp_recs, start=2):
+        for ci, col in enumerate(columns, start=1):
+            if col.header == ID_HEADER:
+                orig.cell(row=r, column=ci, value=record.expense_id)
+                continue
+            cell = cell_for(record, col)
+            orig.cell(row=r, column=ci,
+                      value=cell.value if cell else None)
+    # Blocked-cell deviation: a locked cell whose value stops matching the
+    # export-time Orig value flips bright red. Single-cell rules, because only
+    # blocked cells may never legitimately change.
+    id_letter = get_column_letter(
+        next(i for i, c in enumerate(columns, 1) if c.header == ID_HEADER))
+    for r, record in enumerate(exp_recs, start=2):
+        for ci, col in enumerate(columns, start=1):
+            if col.header == ID_HEADER:
+                continue
+            cell = cell_for(record, col)
+            if cell is None or not cell.locked:
+                continue
+            letter = get_column_letter(ci)
+            orig_val = (f'IFERROR(INDEX({ORIG}!$A:$ZZ,'
+                        f'MATCH(${id_letter}{r},{ORIG}!$A:$A,0),'
+                        f'MATCH({letter}$1,{ORIG}!$1:$1,0)),"")')
+            ws.conditional_formatting.add(
+                f"{letter}{r}",
+                FormulaRule(formula=[f'AND({letter}{r}<>"",'
+                                    f'{letter}{r}<>{orig_val})'],
+                            fill=FILL_WRONG, stopIfTrue=True))
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = f"A1:{get_column_letter(len(columns))}{last}"
     _protect(ws)
@@ -564,13 +729,16 @@ def build_workbook(data: WorkbookData) -> Workbook:
     _fit_columns(details, 3)
     _protect(details)
 
-    # --- Customization.
+    # --- Backend Data (read-only reference).
     _read_only_banner(custom)
     _header_row(custom, 3, ["Expense Type", "Column", "Concur Label",
-                            "Concur Field", "Required", "Options"])
-    for r, row in enumerate(customization_rows(data.options), start=4):
+                            "Concur Field", "Required", "Options", "Key"])
+    for r, row in enumerate(customization_rows(data.records, data.options),
+                               start=4):
         for c, v in enumerate(row, start=1):
             custom.cell(row=r, column=c, value=v)
+        custom.cell(row=r, column=7, value=f"=A{r}&\"|\"&B{r}")
+    custom.column_dimensions["G"].hidden = True
     _fit_columns(custom, 3, ceiling=100)
     custom.freeze_panes = "A4"
     _protect(custom)
@@ -603,7 +771,11 @@ def write_workbook(path: Path, data: WorkbookData) -> list[Column]:
 
 
 def read_workbook(path: Path) -> tuple[str, dict[str, dict[tuple[str, str], str]]]:
-    """Return (report_id, {expense_id: {(field, meaning): value}})."""
+    """Return (report_id, {expense_id: {(field, meaning): value}}).
+
+    Only the Expenses sheet is read: the read-only Meals sheet is never an
+    input to write-back.
+    """
     wb = load_workbook(path)
     lists = wb[LISTS]
     colmap = {}
@@ -644,6 +816,171 @@ def read_workbook(path: Path) -> tuple[str, dict[str, dict[tuple[str, str], str]
     return report_id, out
 
 
+# --------------------------------------------------------------------------
+# Write-back routing (pure). Design: plans/xlsx-writeback.md
+# --------------------------------------------------------------------------
+
+#: The (field, meaning) key ``read_workbook`` reports for the Expense Type
+#: column: it is a plain single-meaning column, so its meaning is empty.
+TYPE_KEY = ("expenseType", "")
+
+
+class RoutingError(ValueError):
+    """A workbook row cannot be routed to Concur fields without guessing."""
+
+
+def read_backend_routing(path: Path) -> dict[tuple[str, str], set[str]]:
+    """``(expense type, column header) -> {Concur field}`` from Backend Data.
+
+    This is the same (type, column) table the sheet's conditional formatting
+    looks up, so the cell colours and write-back can never disagree about
+    which field a column means.
+
+    The hidden ``Key`` column (``=A&"|"&B``) is deliberately **not** read: it is
+    a formula, and openpyxl never evaluates one, so a freshly exported workbook
+    has no cached value there. The key is recomputed from columns A and B.
+    """
+    wb = load_workbook(path, read_only=True)
+    try:
+        ws = wb[CUSTOMIZATION]
+        out: dict[tuple[str, str], set[str]] = {}
+        for row in ws.iter_rows(min_row=4, max_col=4, values_only=True):
+            if not row or row[0] is None:
+                break
+            expense_type = str(row[0] or "").strip()
+            header = str(row[1] or "").strip()
+            field_name = str(row[3] or "").strip()
+            if not (expense_type and header and field_name):
+                continue
+            out.setdefault((expense_type, _norm(header)), set()).add(field_name)
+        return out
+    finally:
+        wb.close()
+
+
+def route_merged(
+    routing: Mapping[tuple[str, str], set[str]],
+    expense_type: str,
+    header: str,
+) -> str | None:
+    """The Concur field a merged column means *for this expense type*.
+
+    ``None`` means the column does not apply to this type. A type absent from
+    Backend Data is unknown, which is handled the same way here: it is never
+    silently assumed not-applicable, and a non-blank cell in that state is
+    refused by the caller instead.
+    """
+    if not expense_type:
+        return None
+    fields = routing.get((expense_type, _norm(header)))
+    if not fields:
+        return None
+    if len(fields) > 1:
+        raise RoutingError(
+            f"column {header!r} is ambiguous for expense type {expense_type!r}: "
+            f"Backend Data routes it to {sorted(fields)}. Refusing to guess."
+        )
+    return next(iter(fields))
+
+
+def push_rows(
+    path: Path,
+) -> tuple[str, dict[str, dict[str, str]]]:
+    """``(report_id, {expense_id: {Concur field: value}})`` for write-back.
+
+    Every column is routed **per row, by that row's own expense type**. This is
+    the whole point: ``custom28`` appears under two different labels in the
+    ``Days/Nights`` merge, so resolving by field name alone would write a
+    Laundry day-count into a Lodging - Other night-count.
+
+    Rules, all chosen so that a mistake is loud rather than silent:
+
+    * A merged column that does not apply to the row's type is **skipped**. A
+      blank cell there meant "no change" anyway.
+    * A **non-blank** merged cell that cannot be routed is a hard error. That
+      is an operator edit we cannot honour, and dropping it would look like a
+      successful push.
+    * Two workbook columns resolving to the same Concur field on one row is a
+      hard error whenever their values disagree.
+    * Per-diem rows never appear: they live on the read-only Meals sheet, which
+      :func:`read_workbook` does not read.
+    """
+    report_id, values_by_id = read_workbook(path)
+    routing = read_backend_routing(path)
+    out: dict[str, dict[str, str]] = {}
+    for expense_id, values in values_by_id.items():
+        expense_type = str(values.get(TYPE_KEY) or "").strip()
+        row: dict[str, str] = {}
+        origin: dict[str, str] = {}
+        for (name, meaning), value in values.items():
+            blank = not str(value).strip()
+            if name == MERGED_FIELD:
+                field_name = route_merged(routing, expense_type, meaning)
+                if field_name is None:
+                    if not blank:
+                        raise RoutingError(
+                            f"expense {expense_id}: column {meaning!r} holds "
+                            f"{value!r} but does not apply to expense type "
+                            f"{expense_type or '(blank)'!r}; Backend Data has no "
+                            f"route for it. Re-export so the column matches."
+                        )
+                    continue
+            else:
+                field_name = name
+            if field_name in row and row[field_name] != value:
+                raise RoutingError(
+                    f"expense {expense_id}: columns {origin[field_name]!r} and "
+                    f"{meaning or field_name!r} both route to Concur field "
+                    f"{field_name!r} with different values "
+                    f"({row[field_name]!r} vs {value!r}). Refusing to pick one."
+                )
+            row[field_name] = value
+            origin.setdefault(field_name, meaning or field_name)
+        out[expense_id] = row
+    return report_id, out
+
+
+def push_sheet(path: Path):
+    """A ``csvio.Sheet`` for the batch writer, plus the workbook's report ID.
+
+    Identity comes from the workbook (Expense ID per row, Report ID on Report
+    Details) exactly as it does for the CSV path, so no command-line option can
+    aim a write at a report the file never named.
+    """
+    from . import csvio
+
+    path = Path(path)
+    if not path.is_file():
+        raise RoutingError(f"no such workbook: {path}")
+
+    report_id, rows_by_id = push_rows(path)
+    report_id = str(report_id or "").strip()
+    if not report_id:
+        raise RoutingError(
+            "Report Details has no Report ID; refusing to guess which report "
+            "this workbook describes. Re-export with the export CLI."
+        )
+    if not rows_by_id:
+        raise RoutingError("Expenses has no rows; there is nothing to push")
+    field_columns: list[str] = []
+    seen: set[str] = set()
+    for row in rows_by_id.values():
+        for name in row:
+            if name not in seen:
+                seen.add(name)
+                field_columns.append(name)
+    rows = tuple(
+        {
+            csvio.EXPENSE_ID_COLUMN: expense_id,
+            csvio.REPORT_ID_COLUMN: report_id,
+            **row,
+        }
+        for expense_id, row in rows_by_id.items()
+    )
+    return report_id, csvio.Sheet(field_columns=tuple(field_columns), rows=rows)
+
+
+
 def verify_workbook(path: Path, data: WorkbookData) -> list[str]:
     """Differences between the written workbook and the records it came from."""
     report_id, rows = read_workbook(path)
@@ -651,9 +988,10 @@ def verify_workbook(path: Path, data: WorkbookData) -> list[str]:
     if report_id != data.report_id:
         problems.append(f"report ID {report_id!r} != {data.report_id!r}")
     columns = plan_columns(data.records)
-    if set(rows) != {r.expense_id for r in data.records}:
+    exp_recs, meal_recs = split_meal_records(data.records)
+    if set(rows) != {r.expense_id for r in exp_recs}:
         problems.append("expense ID set differs")
-    for record in data.records:
+    for record in exp_recs:
         got = rows.get(record.expense_id, {})
         for col in columns:
             if col.header == ID_HEADER:
@@ -664,6 +1002,55 @@ def verify_workbook(path: Path, data: WorkbookData) -> list[str]:
             if have != want:
                 problems.append(f"{record.expense_id[:12]} {col.header}: "
                                 f"{have!r} != {want!r}")
+    problems.extend(_verify_meals(path, exp_recs, meal_recs))
+    return problems
+
+
+def _verify_meals(path: Path, exp_recs: Sequence[ExpenseRecord],
+                  meal_recs: Sequence[ExpenseRecord]) -> list[str]:
+    """Check the read-only Meals sheet against the meal records."""
+    wb = load_workbook(path)
+    if MEALS not in wb.sheetnames:
+        return ["Meals sheet missing"] if meal_recs else []
+    ms = wb[MEALS]
+    if ms["A1"].value != MEALS_BANNER:
+        return ["Meals sheet is missing its read-only banner"]
+    headers = [c.value for c in ms[3]]
+    if headers.count(ID_HEADER) != 1:
+        return ["Meals sheet must have exactly one Expense ID column"]
+    id_at = headers.index(ID_HEADER)
+    seen: dict[str, dict[str, str]] = {}
+    for row in ms.iter_rows(min_row=4, values_only=True):
+        if not row or not any(v not in (None, "") for v in row):
+            continue
+        eid = str(row[id_at] or "").strip()
+        if not eid or eid in seen:
+            return [f"Meals sheet has a bad or duplicate Expense ID {eid!r}"]
+        seen[eid] = {h: ("" if v is None else str(v))
+                     for h, v in zip(headers, row) if h != ID_HEADER}
+    problems = []
+    if set(seen) != {r.expense_id for r in meal_recs}:
+        problems.append("Meals expense ID set differs")
+    columns = plan_columns(exp_recs + meal_recs)
+    extras = {h: (name, label) for h, name, label in
+              meal_extra_columns(meal_recs)}
+    by_id = {r.expense_id: r for r in meal_recs}
+    for eid, values in seen.items():
+        record = by_id.get(eid)
+        if record is None:
+            continue
+        by_key = {(c.name, _norm(c.label)): c.value for c in record.cells}
+        for col in columns:
+            if col.header == ID_HEADER:
+                continue
+            cell = cell_for(record, col)
+            want = cell.value if cell else ""
+            if values.get(col.header, "") != want:
+                problems.append(f"{eid[:12]} meals {col.header}: "
+                                f"{values.get(col.header, '')!r} != {want!r}")
+        for header, (name, label) in extras.items():
+            if values.get(header, "") != by_key.get((name, label), ""):
+                problems.append(f"{eid[:12]} meals {header}: mismatch")
     return problems
 
 
