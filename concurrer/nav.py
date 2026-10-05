@@ -109,6 +109,8 @@ def _expense_id_in_url(url: str, report_id: str) -> str:
 
 
 EXPENSE_READY_JS_POLL_MS = 500
+LATE_FILLED_FIELDS = ("paymentType",)
+LATE_FILL_GRACE_MS = 6000
 
 
 def wait_for_expense_ready(page, timeout_ms: int = 30_000) -> list[dict]:
@@ -120,13 +122,24 @@ def wait_for_expense_ready(page, timeout_ms: int = 30_000) -> list[dict]:
     with no fields.
     """
     polled = 0
+    late_polled = 0
     while polled < timeout_ms:
         try:
             fields = field_inventory(page)
         except Exception:  # noqa: BLE001 - mid-navigation, retry
             fields = []
         if any(field.get("name") for field in fields):
-            return fields
+            # Payment Type renders blank and fills ~2s after the other fields
+            # (probed 2026-10-05: '' at 7.0s, 'Personal Funds' at 9.2s, no
+            # click). Returning at first render made every export, dry-run
+            # diff, and pre-save check see a required field as empty. Grace is
+            # bounded; a value still blank afterwards is reported, not hidden.
+            pending = [f for f in fields
+                       if f.get("name") in LATE_FILLED_FIELDS
+                       and not str(f.get("value", "")).strip()]
+            if not pending or late_polled >= LATE_FILL_GRACE_MS:
+                return fields
+            late_polled += EXPENSE_READY_JS_POLL_MS
         page.wait_for_timeout(EXPENSE_READY_JS_POLL_MS)
         polled += EXPENSE_READY_JS_POLL_MS
     raise RuntimeError(

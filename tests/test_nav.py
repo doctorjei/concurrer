@@ -75,6 +75,56 @@ class ExpenseReadyTests(unittest.TestCase):
         self.assertEqual(fields, [{"name": ""}, {"name": "expenseType"}])
         self.assertEqual(seen, [500])
 
+    def test_readiness_waits_for_late_filled_payment_type(self):
+        # Live 2026-10-05: Payment Type reads '' at first render, then fills.
+        blank = [{"name": "expenseType", "value": "Airfare"},
+                 {"name": "paymentType", "value": ""}]
+        filled = [{"name": "expenseType", "value": "Airfare"},
+                  {"name": "paymentType", "value": "Personal Funds"}]
+        seen = []
+
+        class Page:
+            url = "https://example.test/expense"
+            inventories = [blank, blank, filled]
+
+            def evaluate(self, _script):
+                return self.inventories.pop(0)
+
+            def wait_for_timeout(self, ms):
+                seen.append(ms)
+
+        from concurrer.nav import wait_for_expense_ready
+
+        with patch("concurrer.nav.field_inventory",
+                   side_effect=lambda page: page.evaluate("fields")):
+            fields = wait_for_expense_ready(Page(), timeout_ms=30_000)
+
+        self.assertEqual(fields, filled)
+        self.assertEqual(seen, [500, 500])
+
+    def test_genuinely_blank_payment_type_returns_after_bounded_grace(self):
+        blank = [{"name": "expenseType", "value": "Airfare"},
+                 {"name": "paymentType", "value": ""}]
+        seen = []
+
+        class Page:
+            url = "https://example.test/expense"
+
+            def evaluate(self, _script):
+                return blank
+
+            def wait_for_timeout(self, ms):
+                seen.append(ms)
+
+        from concurrer.nav import LATE_FILL_GRACE_MS, wait_for_expense_ready
+
+        with patch("concurrer.nav.field_inventory",
+                   side_effect=lambda page: page.evaluate("fields")):
+            fields = wait_for_expense_ready(Page(), timeout_ms=30_000)
+
+        self.assertEqual(fields, blank)
+        self.assertEqual(sum(seen), LATE_FILL_GRACE_MS)
+
     def test_unrendered_form_raises_instead_of_returning_empty(self):
         class Page:
             url = "https://example.test/expense"
