@@ -22,13 +22,24 @@ from .widgets import field_inventory
 BASE = "https://us2.concursolutions.com"
 
 
-def open_report(page, report_id: str, settle_ms: int = 8000) -> None:
+def open_report(page, report_id: str, settle_ms: int | None = None) -> None:
+    """Open a report page.
+
+    With the default ``settle_ms=None`` this waits for real content via
+    :func:`wait_for_report_ready` -- a fixed 8s settle measurably lands on an
+    unloaded grid, which reads back as an empty report. An explicit value
+    keeps a fixed settle for callers that only navigate away (e.g. abandoning
+    an unsaved form), where raising on a slow page would be wrong.
+    """
     page.goto(
         f"{BASE}/nui/expense/reports/{report_id}",
         wait_until="domcontentloaded",
         timeout=60_000,
     )
-    page.wait_for_timeout(settle_ms)
+    if settle_ms is None:
+        wait_for_report_ready(page)
+    else:
+        page.wait_for_timeout(settle_ms)
 
 
 #: What "this report page is loaded" means, measured live on 2026-09-30.
@@ -44,7 +55,7 @@ def open_report(page, report_id: str, settle_ms: int = 8000) -> None:
 #:     t=0..8s   gridRows=0  toolbar=False  bodyTextLen=286   (shell only)
 #:     t=15s     gridRows=2  toolbar=True   bodyTextLen=535   (loaded)
 #:
-#: Note what that means for the 8s default in ``open_report``: at that point
+#: Note what that meant for the old 8s default in ``open_report``: at that point
 #: the grid has **zero rows**, so a reader gets an empty result that looks
 #: like an empty report rather than an unloaded one. Waiting for content is
 #: not paranoia; the failure it prevents is silent.

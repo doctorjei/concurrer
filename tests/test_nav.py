@@ -141,3 +141,34 @@ class ExpenseReadyTests(unittest.TestCase):
                    side_effect=lambda page: page.evaluate("fields")), \
             self.assertRaises(RuntimeError):
             wait_for_expense_ready(Page(), timeout_ms=500)
+
+
+class OpenReportTests(unittest.TestCase):
+    class Page:
+        def __init__(self):
+            self.calls = []
+
+        def goto(self, url, **_kw):
+            self.calls.append(("goto", url))
+
+        def wait_for_timeout(self, ms):
+            self.calls.append(("sleep", ms))
+
+    def test_default_waits_for_content_not_a_fixed_delay(self):
+        from concurrer.nav import open_report
+
+        page = self.Page()
+        with patch("concurrer.nav.wait_for_report_ready",
+                   side_effect=lambda p: p.calls.append(("ready",))) as ready:
+            open_report(page, "ABC123")
+        ready.assert_called_once()
+        self.assertNotIn("sleep", [c[0] for c in page.calls])
+
+    def test_explicit_settle_keeps_fixed_wait_for_navigate_away_callers(self):
+        from concurrer.nav import open_report
+
+        page = self.Page()
+        with patch("concurrer.nav.wait_for_report_ready") as ready:
+            open_report(page, "ABC123", settle_ms=1000)
+        ready.assert_not_called()
+        self.assertEqual(page.calls[-1], ("sleep", 1000))

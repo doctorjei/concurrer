@@ -189,7 +189,7 @@ def main() -> int:
                     print(f"   [{it['role']:<12}] {it['text'][:70]!r}"
                           f"{d} nuiexp={it['nuiexp'] or '-'}")
 
-        open_report(page, args.report, settle_ms=4000)
+        open_report(page, args.report)
         print(f"\nbacked out; now at {page.url}")
 
     return 0

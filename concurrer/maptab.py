@@ -291,7 +291,7 @@ def main() -> int:
             # back-out is navigating away. Do that explicitly rather than
             # relying on the browser closing.
             print("\nno Cancel/Close exists on this page — navigating away to back out")
-            open_report(page, args.report, settle_ms=4000)
+            open_report(page, args.report)
             print(f"backed out; now at {page.url}")
 
     return 0

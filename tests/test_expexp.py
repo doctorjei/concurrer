@@ -22,7 +22,6 @@ class CollectReportTests(unittest.TestCase):
 
         with patch.object(expexp, "open_report",
                           side_effect=lambda page, report, **_: calls.append(("report", report))), \
-             patch.object(expexp, "wait_for_report_ready", return_value={}), \
              patch.object(expexp, "report_header", return_value={"Report Name": "R"}), \
              patch.object(expexp, "triage_rows", return_value=rows), \
              patch.object(expexp, "open_expense_by_id",
@@ -41,7 +40,6 @@ class CollectReportTests(unittest.TestCase):
     def test_direct_open_failure_reports_expense_id_not_row_number(self):
         rows = [{"identity": "Select expense, first", "expense_id": "AAA111"}]
         with patch.object(expexp, "open_report"), \
-             patch.object(expexp, "wait_for_report_ready", return_value={}), \
              patch.object(expexp, "triage_rows", return_value=rows), \
              patch.object(expexp, "open_expense_by_id",
                           side_effect=RuntimeError("unreadable")), \
@@ -60,7 +58,6 @@ class CollectReportTests(unittest.TestCase):
              "required": True, "locked": False},
         ]
         with patch.object(expexp, "open_report"), \
-             patch.object(expexp, "wait_for_report_ready", return_value={}), \
              patch.object(expexp, "triage_rows", return_value=rows), \
              patch.object(expexp, "open_expense_by_id",
                           side_effect=AssertionError("unexpected direct open")), \

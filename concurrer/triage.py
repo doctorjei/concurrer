@@ -173,7 +173,7 @@ def main() -> int:
                 if info["locked_but_required_empty"]:
                     print(f"         locked+required+empty="
                           f"{info['locked_but_required_empty']}")
-                open_report(page, args.report, settle_ms=4000)
+                open_report(page, args.report)
 
         path = f"{OUT}/triage_{args.report[:12]}.json"
         with open(path, "w") as fh:

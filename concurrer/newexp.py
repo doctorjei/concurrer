@@ -244,7 +244,7 @@ def main() -> int:
         page.wait_for_timeout(8000)
         print(f"  after save: {page.url}")
 
-        open_report(page, args.report, settle_ms=8000)
+        open_report(page, args.report)
         after = page.evaluate("""() => document.body.innerText.slice(0, 3000)""")
         payload["after_save_text"] = after
         path = f"{OUT}/created_{args.type[:18].replace(' ', '_')}.json"

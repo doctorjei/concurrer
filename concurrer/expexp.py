@@ -50,7 +50,6 @@ from .nav import (
     open_expense_edit,
     open_report,
     report_header,
-    wait_for_report_ready,
 )
 from .secrets import STATE_DIR, resolve
 from .triage import row_expense_id, triage_rows
@@ -97,7 +96,6 @@ def collect_report(
     through the list, selecting its row, and clicking Edit.
     """
     open_report(page, report_id)
-    wait_for_report_ready(page)
     details = report_header(page) if collect_header else {}
 
     rows = [row for row in triage_rows(page) if _is_data_row(row)]

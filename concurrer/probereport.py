@@ -28,7 +28,7 @@ from pathlib import Path
 
 from .banners import parse_banner_actions
 from .login import authenticated_context
-from .nav import open_expense_by_id, open_report, wait_for_report_ready
+from .nav import open_expense_by_id, open_report
 from .secrets import STATE_DIR, resolve
 from .widgets import field_inventory, read_combobox_options
 
@@ -99,7 +99,6 @@ def main() -> int:
         banner_actions=parse_banner_actions(args.banner_action),
     ) as page:
         open_report(page, args.report)
-        wait_for_report_ready(page)
         report = page.evaluate(REPORT_JS)
         path = _dump(f"reportprobe_{args.report}.json", report)
         print(f"report page: {len(report['nuiexp'])} handles, "

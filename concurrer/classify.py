@@ -99,7 +99,7 @@ def main() -> int:
             print(f"  {n:>2}. row {i}  {d.get('Vendor Name','')[:34]:<34} "
                   f"{d.get('Amount',''):>10} {d.get('Currency','')[:10]:<10} "
                   f"{d.get('Transaction Date','')}")
-            open_report(page, args.report, settle_ms=4000)
+            open_report(page, args.report)
 
         path = f"{OUT}/classify_{args.match.lower()}_{args.report[:12]}.json"
         with open(path, "w") as fh:

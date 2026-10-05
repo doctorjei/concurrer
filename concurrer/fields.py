@@ -237,7 +237,7 @@ def main() -> int:
 
         # Back out by navigation: this page has no Cancel/Close, and nothing
         # persists until `Save Expense`.
-        open_report(page, args.report, settle_ms=4000)
+        open_report(page, args.report)
         print(f"backed out; now at {page.url}")
 
     return 0
