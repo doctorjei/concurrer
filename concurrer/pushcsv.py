@@ -305,7 +305,7 @@ def commit_batch(page, preflight: BatchPreflight) -> int:
     if committed:
         print(f"\nBATCH COMMITTED AND VERIFIED — {len(committed)} expense(s)")
     else:
-        print("\nNo changes. The CSV already matches live state; nothing saved.")
+        print("\nNo changes. The file already matches live state; nothing saved.")
     return 0
 
 

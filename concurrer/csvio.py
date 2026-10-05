@@ -458,7 +458,7 @@ def format_plan(push: PushPlan, *, verbose: bool = True) -> str:
             f"\n  DUPLICATE expense_id(s): {', '.join(push.duplicate_ids)}"
         )
     if not actionable and not push.has_errors:
-        lines.append("\n  No changes. The CSV matches live state exactly.")
+        lines.append("\n  No changes. The file matches live state exactly.")
     return "\n".join(lines)
 
 
