@@ -22,6 +22,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
+import shutil
 import sys
 from contextlib import contextmanager
 from pathlib import Path
@@ -288,6 +290,50 @@ def login(
         return page.url
 
 
+#: Where Playwright installs browsers (``$HOME``, so they survive a rebuild) and
+#: where they are run from. ``$HOME`` is an NFS mount here: reading the 293 MB
+#: chrome binary from it took 31s. Under host memory pressure the kernel drops
+#: the binary's code pages and the renderer re-faults them over NFS, freezing in
+#: uninterruptible I/O mid-export (2026-10-05: two CCED pulls stalled, renderer
+#: in state D, ``folio_wait_bit_common``). A local copy reads in under 1s.
+BROWSERS_INSTALLED = Path.home() / ".cache" / "ms-playwright"
+BROWSERS_LOCAL = Path("/var/tmp/ms-playwright")
+
+
+def stage_local_browsers(
+    installed: Path = BROWSERS_INSTALLED, local: Path = BROWSERS_LOCAL
+) -> Path | None:
+    """Run browsers from local disk, copying them there first if needed.
+
+    Respects an explicit ``PLAYWRIGHT_BROWSERS_PATH``. The local copy lives in
+    the container rootfs, so it is lost on rebuild and re-copied (~60s) on the
+    next run. Failure to stage is a warning, not an error: the NFS copy still
+    works, just slowly.
+    """
+    if os.environ.get("PLAYWRIGHT_BROWSERS_PATH") or not installed.is_dir():
+        return None
+    wanted = sorted(e.name for e in installed.iterdir() if not e.name.startswith("."))
+    have = (sorted(e.name for e in local.iterdir() if not e.name.startswith("."))
+            if local.is_dir() else [])
+    if have != wanted:
+        print(f"staging browsers to local disk: {local} (one-time per rebuild)",
+              file=sys.stderr, flush=True)
+        tmp = local.with_name(local.name + ".partial")
+        try:
+            shutil.rmtree(tmp, ignore_errors=True)
+            shutil.copytree(installed, tmp, symlinks=True)
+            shutil.rmtree(local, ignore_errors=True)
+            tmp.rename(local)
+        except OSError as exc:
+            shutil.rmtree(tmp, ignore_errors=True)
+            print(f"WARNING: could not stage browsers locally ({exc}); "
+                  "running from NFS, which can stall under memory pressure",
+                  file=sys.stderr, flush=True)
+            return None
+    os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(local)
+    return local
+
+
 @contextmanager
 def authenticated_context(
     *,
@@ -306,6 +352,7 @@ def authenticated_context(
     in the same session that authenticated. Closes everything on exit.
     """
     configure(snapshot=_snapshot, announce=_announce)
+    stage_local_browsers()
     profile = STATE_DIR / "browser" if persist else None
 
     with sync_playwright() as p:
