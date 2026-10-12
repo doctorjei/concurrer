@@ -45,7 +45,7 @@ from .csvio import single_report_id
 from .edit import PlanError
 from .pushcsv import BatchPlanError, _run
 from .safety import test_report_write_grant
-from .xlsxio import RoutingError, push_sheet
+from .xlsxio import RoutingError, push_sheet, workbook_issues
 
 
 def load(path: Path):
@@ -55,6 +55,16 @@ def load(path: Path):
     and the expense ID from each row, so no option can aim a write at a report
     the workbook never named.
     """
+    if not path.is_file():
+        raise RoutingError(f"workbook does not exist or is not a regular file: {path}")
+    issues = workbook_issues(path)
+    if issues:
+        rendered = "\n  ".join(issue.describe() for issue in issues[:40])
+        suffix = "\n  … additional issues omitted" if len(issues) > 40 else ""
+        raise RoutingError(
+            f"workbook has {len(issues)} red/pink cell issue(s); refusing the "
+            f"whole batch before login or write:\n  {rendered}{suffix}"
+        )
     report_id, sheet = push_sheet(path)
     # Reuse the CSV path's canonicalisation and validation so both readers
     # agree on what a usable report ID is (uppercase, hexadecimal, one value).

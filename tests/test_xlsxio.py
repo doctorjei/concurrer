@@ -24,6 +24,7 @@ from concurrer.xlsxio import (
     plan_columns,
     verify_workbook,
     write_workbook,
+    workbook_issues,
 )
 
 REPORT = "506EC055FE79452BB943"
@@ -142,6 +143,39 @@ class XlsxTests(unittest.TestCase):
             self.assertIn(expected, fills)
         self.assertTrue(any('="Yes",FALSE)' in r for r in rules))
         self.assertTrue(any("COUNTIF(Lists!" in r for r in rules))
+
+    def test_workbook_issue_mirror_matches_red_and_edited_pink_rules(self):
+        write_workbook(self.path, data())
+        self.assertEqual(workbook_issues(self.path), [])
+        wb = load_workbook(self.path)
+        ws = wb[EXPENSES]
+        headers = [c.value for c in ws[1]]
+
+        # An edited GT row has an option outside its Variant list: bright red.
+        ws.cell(2, headers.index("Variant") + 1).value = "Plane"
+        wb.save(self.path)
+        self.assertIn("off-list", {issue.kind for issue in workbook_issues(self.path)})
+
+        # Required-empty is pink, and blocks only because this row was edited.
+        wb = load_workbook(self.path)
+        ws = wb[EXPENSES]
+        ws.cell(2, headers.index("Variant") + 1).value = None
+        wb.save(self.path)
+        self.assertIn("required-empty", {issue.kind for issue in workbook_issues(self.path)})
+
+        # A value in the target-inapplicable Days/Nights custom column is red.
+        wb = load_workbook(self.path)
+        ws = wb[EXPENSES]
+        ws.cell(2, headers.index("Days/Nights") + 1).value = "3"
+        wb.save(self.path)
+        self.assertIn("not-applicable", {issue.kind for issue in workbook_issues(self.path)})
+
+        # An edited locked card field is red even if it otherwise looks valid.
+        wb = load_workbook(self.path)
+        ws = wb[EXPENSES]
+        ws.cell(2, headers.index("Date") + 1).value = "10/01/2026"
+        wb.save(self.path)
+        self.assertIn("locked-deviation", {issue.kind for issue in workbook_issues(self.path)})
 
     def test_request_payment_and_currency_are_constrained_dropdowns(self):
         # Payment/Currency are captured fixed Concur lists; Request is the

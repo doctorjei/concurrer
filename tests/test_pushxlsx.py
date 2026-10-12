@@ -13,6 +13,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from openpyxl import load_workbook
+
 from concurrer import pushxlsx
 from concurrer.csvio import EXPENSE_ID_COLUMN, REPORT_ID_COLUMN
 from concurrer.xlsxio import (
@@ -76,6 +78,18 @@ class PushXlsxLoadTests(unittest.TestCase):
         report_id, sheet = pushxlsx.load(self.path)
         self.assertEqual(report_id, TEST_REPORT)
         self.assertEqual(sheet.expense_ids, ("DDDD4444",))
+
+    def test_red_or_edited_pink_cell_aborts_before_sheet_routing(self):
+        self.write(TEST_REPORT, [airfare()])
+        wb = load_workbook(self.path)
+        ws = wb["Expenses"]
+        headers = [c.value for c in ws[1]]
+        # Airfare has no Days/Nights route. This is the same red condition the
+        # sheet shows after a type-aware edit, and no browser may be reached.
+        ws.cell(2, headers.index("Days/Nights") + 1).value = "1"
+        wb.save(self.path)
+        with self.assertRaisesRegex(RoutingError, "not-applicable"):
+            pushxlsx.load(self.path)
 
     def test_every_row_carries_the_workbook_report_id(self):
         self.write(TEST_REPORT, [airfare(), laundry()])

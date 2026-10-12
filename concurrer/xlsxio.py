@@ -31,6 +31,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import json
 import math
+import re
+from decimal import Decimal, InvalidOperation
 from datetime import datetime
 from statistics import mean, pstdev
 from pathlib import Path
@@ -39,7 +41,7 @@ from typing import Mapping, Sequence
 from openpyxl import Workbook, load_workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Font, PatternFill
-from openpyxl.utils import get_column_letter
+from openpyxl.utils import get_column_letter, range_boundaries
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from .csvio import ExpenseRecord
@@ -444,13 +446,18 @@ def customization_rows(
             if cell is None or (expense_type, col.header) in seen:
                 continue
             seen.add((expense_type, col.header))
+            # Live provenance owns the field route/lock state, while the
+            # checked-in type sweep supplies a custom field's stable options
+            # when this particular export did not open that picker.
+            opts = (OPTIONS_BY_TYPE.get((expense_type, cell.name))
+                    or options.get((cell.name, _norm(cell.label))) or ())
             rows.append((
                 expense_type,
                 col.header,
                 " ".join(cell.label.split()),
                 cell.name,
                 "Yes" if cell.required else "No",
-                "",
+                " | ".join(opts),
                 "Live",
             ))
     # Add known-positive fields from the complete manual-form sweep. An
@@ -724,7 +731,12 @@ def build_workbook(data: WorkbookData) -> Workbook:
             # Live observation is definitive for this report/provenance. The
             # manual sweep is exhaustive for custom fields, but a missing
             # ordinary field can depend on card provenance or report linkage.
-            definite = f'OR({live},{manual})' if col.type_specific else live
+            # Merged vendor is still an ordinary provenance-sensitive field:
+            # the manual form lacking it does not prove a card-fed target lacks
+            # vendorName. Only custom meanings have exhaustive manual absence.
+            custom_applicability = (col.field.startswith("custom")
+                                    or (col.routes and col.header != "vendor"))
+            definite = f'OR({live},{manual})' if custom_applicability else live
             na = f'AND({definite},NOT({hasrow}))'
             req = (f'IFERROR(INDEX({cu}!$E:$E,MATCH(${type_letter}2&"|"&'
                    f'{letter}$1,{cu}!$G:$G,0))="Yes",FALSE)')
@@ -910,6 +922,157 @@ TYPE_KEY = ("expenseType", "")
 
 class RoutingError(ValueError):
     """A workbook row cannot be routed to Concur fields without guessing."""
+
+
+@dataclass(frozen=True)
+class WorkbookIssue:
+    """One cell whose Python state matches a red/pink workbook condition."""
+
+    expense_id: str
+    row: int
+    header: str
+    kind: str
+    detail: str
+
+    def describe(self) -> str:
+        return (f"expense {self.expense_id} row {self.row} {self.header!r}: "
+                f"{self.kind}: {self.detail}")
+
+
+def _validation_options(wb, ws, headers: Sequence[str]) -> dict[str, set[str]]:
+    """Exact list-validation choices by visible header (not formulas)."""
+    out: dict[str, set[str]] = {}
+    for dv in ws.data_validations.dataValidation:
+        formula = str(dv.formula1 or "")
+        if "!" not in formula:
+            continue  # Variant's OFFSET is represented in Backend Data instead.
+        sheet, ref = formula.rsplit("!", 1)
+        sheet = sheet.strip("'")
+        if sheet not in wb.sheetnames:
+            continue
+        try:
+            min_col, min_row, max_col, max_row = range_boundaries(ref)
+        except ValueError:
+            continue
+        choices = {str(wb[sheet].cell(r, c).value) for c in range(min_col, max_col + 1)
+                   for r in range(min_row, max_row + 1)
+                   if wb[sheet].cell(r, c).value not in (None, "")}
+        for rng in dv.sqref.ranges:
+            for col in range(rng.min_col, rng.max_col + 1):
+                if col <= len(headers):
+                    out[headers[col - 1]] = choices
+    return out
+
+
+def workbook_issues(path: Path) -> list[WorkbookIssue]:
+    """Mirror bright-red and edited-row-pink rules without Excel calculation.
+
+    This is the pre-browser batch gate. It reads the same Backend Data, Lists,
+    Orig, and cell protections that the workbook's conditional formatting uses;
+    it never infers an unknown standard field to be not-applicable. Unknown
+    fields are left for the live type-change rehearsal, not silently routed.
+    """
+    wb = load_workbook(path, data_only=False)
+    try:
+        ws, backend, orig, lists = (wb[EXPENSES], wb[CUSTOMIZATION],
+                                    wb[ORIG], wb[LISTS])
+        headers = [str(cell.value or "") for cell in ws[1]]
+        if ID_HEADER not in headers:
+            raise RoutingError(f"Expenses lacks {ID_HEADER!r}")
+        id_at = headers.index(ID_HEADER) + 1
+        original_headers = [str(cell.value or "") for cell in orig[1]]
+        original_at = {header: i + 1 for i, header in enumerate(original_headers)}
+        if ID_HEADER not in original_at:
+            raise RoutingError(f"Orig lacks {ID_HEADER!r}")
+        original_rows = {
+            str(orig.cell(row, original_at[ID_HEADER]).value or "").strip(): row
+            for row in range(2, orig.max_row + 1)
+        }
+        colmap = {str(row[0] or ""): (str(row[1] or ""), str(row[2] or ""))
+                  for row in lists.iter_rows(min_row=2, max_col=3, values_only=True)
+                  if row and row[0] is not None}
+        facts: dict[tuple[str, str], list[tuple[str, bool, set[str], str]]] = {}
+        live_types, manual_types = set(), set()
+        for row in backend.iter_rows(min_row=4, values_only=True):
+            if not row or row[0] is None:
+                break
+            expense_type, header, _label, field, required, raw_options, _key, evidence = (
+                (str(v or "") for v in (list(row) + [""] * 8)[:8]))
+            if not (expense_type and header and field):
+                continue
+            options = {value.strip() for value in raw_options.split(" | ") if value.strip()}
+            facts.setdefault((expense_type, header), []).append(
+                (field, required == "Yes", options, evidence))
+            if evidence == "Live":
+                live_types.add(expense_type)
+            elif evidence == "Manual":
+                manual_types.add(expense_type)
+        allowed = _validation_options(wb, ws, headers)
+        issues: list[WorkbookIssue] = []
+        type_at = headers.index("Expense Type") + 1
+        for row_number in range(2, ws.max_row + 1):
+            expense_id = str(ws.cell(row_number, id_at).value or "").strip()
+            if not expense_id:
+                continue
+            expense_type = str(ws.cell(row_number, type_at).value or "").strip()
+            original_row = original_rows.get(expense_id)
+            if original_row is None:
+                raise RoutingError(f"Orig has no row for expense {expense_id}")
+            changed = any(
+                str(ws.cell(row_number, ci).value or "") !=
+                str(orig.cell(original_row, original_at[header]).value or "")
+                for ci, header in enumerate(headers, 1)
+                if header in original_at and header != ID_HEADER
+            )
+            for ci, header in enumerate(headers, 1):
+                if header == ID_HEADER:
+                    continue
+                cell = ws.cell(row_number, ci)
+                value = "" if cell.value is None else str(cell.value)
+                key = (expense_type, header)
+                field_facts = facts.get(key, [])
+                # Custom columns (including Days/Nights / Variant merges) have
+                # an exhaustive manual schema; vendor and standard fields do not.
+                source_field, _meaning = colmap.get(header, ("", ""))
+                is_custom = (source_field.startswith("custom") or
+                             (source_field == MERGED_FIELD and header != "vendor"))
+                definite_na = (not field_facts and
+                               (expense_type in live_types or
+                                (is_custom and expense_type in manual_types)))
+                if definite_na and value.strip():
+                    issues.append(WorkbookIssue(expense_id, row_number, header,
+                        "not-applicable", f"{expense_type!r} has no route for this value"))
+                    continue
+                if cell.protection.locked:
+                    old = (str(orig.cell(original_row, original_at[header]).value or "")
+                           if header in original_at else "")
+                    if value and value != old:
+                        issues.append(WorkbookIssue(expense_id, row_number, header,
+                            "locked-deviation", "locked Concur value differs from export"))
+                    continue
+                required = any(fact[1] for fact in field_facts)
+                if changed and required and not value.strip():
+                    issues.append(WorkbookIssue(expense_id, row_number, header,
+                        "required-empty", "required for the edited row's expense type"))
+                    continue
+                choices = set().union(*(fact[2] for fact in field_facts)) if field_facts else set()
+                choices |= allowed.get(header, set())
+                if value.strip() and choices and value not in choices:
+                    issues.append(WorkbookIssue(expense_id, row_number, header,
+                        "off-list", f"{value!r} is not an allowed option"))
+                    continue
+                if header in WHOLE_NUMBER and value.strip():
+                    try:
+                        number = Decimal(value)
+                        invalid_number = number < 0 or number != number.to_integral_value()
+                    except InvalidOperation:
+                        invalid_number = True
+                    if invalid_number:
+                        issues.append(WorkbookIssue(expense_id, row_number, header,
+                            "not-whole", "must be a whole number zero or greater"))
+        return issues
+    finally:
+        wb.close()
 
 
 def read_backend_routing(path: Path) -> dict[tuple[str, str], set[str]]:
