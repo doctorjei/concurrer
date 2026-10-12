@@ -10,6 +10,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from concurrer.csvio import ExpenseRecord, FieldCell
+from concurrer.type_form_map import TYPE_FORM_FIELDS
 from concurrer.type_map import TYPE_FIELDS
 from concurrer.xlsxio import (
     CUSTOMIZATION,
@@ -76,16 +77,16 @@ class XlsxTests(unittest.TestCase):
         for gone in ("Type of Ground Transportation", "Type of Class", "custom20"):
             self.assertNotIn(gone, headers)
 
-    def test_uf_order_and_no_report_id_or_meta(self):
+    def test_uf_order_and_full_schema_columns(self):
         headers = [c.header for c in plan_columns([gt()])]
-        self.assertEqual(
-            headers,
-            ["Date", "Expense Type", "TA#/UF-GO Req.ID",
-             "Business Purpose", "Request", "Trip Type", "vendor", "Variant",
-             "Shared/Accompanied?", "Days/Nights", "Payment Type", "Amount",
-             "Currency", "Comment", "Expense ID"],
-        )
+        # The operator's chosen leading order remains stable, but columns for
+        # types absent from this report must exist for a later type change.
+        self.assertEqual(headers[:2], ["Date", "Expense Type"])
+        self.assertLess(headers.index("Location"), headers.index("Expense ID"))
+        self.assertLess(headers.index("Desc./Justification"), headers.index("Expense ID"))
+        self.assertLess(headers.index("Vehicle Govt #"), headers.index("Expense ID"))
         self.assertEqual(headers[-1], "Expense ID")
+        self.assertEqual(len(headers), len(set(headers)))
         for banned in ("report_id", "__row", "__locked", "__required"):
             self.assertNotIn(banned, headers)
 
@@ -142,13 +143,53 @@ class XlsxTests(unittest.TestCase):
         self.assertTrue(any('="Yes",FALSE)' in r for r in rules))
         self.assertTrue(any("COUNTIF(Lists!" in r for r in rules))
 
-    def test_customization_covers_every_type(self):
+    def test_request_payment_and_currency_are_constrained_dropdowns(self):
+        # Payment/Currency are captured fixed Concur lists; Request is the
+        # exact report-local values already observed on applicable expenses.
+        requested = ExpenseRecord("RRRR0000", REPORT, 3, [
+            cell("expenseType", "Expense Type", "Ground Transportation"),
+            cell("travelRequestExpenseId", "Request",
+                 "05/04/2026, $800.00 - CCED Summer 2026"),
+        ])
+        write_workbook(self.path, WorkbookData(REPORT, [gt(), requested]))
+        wb = load_workbook(self.path)
+        ws, lists = wb[EXPENSES], wb[LISTS]
+        headers = [c.value for c in ws[1]]
+        by_col = {}
+        for dv in ws.data_validations.dataValidation:
+            for rng in dv.sqref.ranges:
+                by_col.setdefault(rng.min_col, dv)
+        for header in ("Request", "Payment Type", "Currency"):
+            self.assertEqual(by_col[headers.index(header) + 1].type, "list")
+        list_headers = [c.value for c in lists[1]]
+        payment_col = list_headers.index("Payment Type") + 1
+        currency_col = list_headers.index("Currency") + 1
+        self.assertEqual(lists.cell(2, payment_col).value, "Pending Transaction")
+        self.assertEqual(lists.cell(3, payment_col).value, "Personal Funds")
+        self.assertEqual(lists.cell(2, currency_col).value,
+                         "Afghanistan, Afghani (AFN)")
+
+    def test_locked_card_value_is_not_recoloured_as_target_type_good(self):
+        write_workbook(self.path, data())
+        ws = load_workbook(self.path)[EXPENSES]
+        headers = [c.value for c in ws[1]]
+        date = ws.cell(row=2, column=headers.index("Date") + 1)
+        self.assertTrue(date.protection.locked)
+        formulas = [r.formula[0] for rng in ws.conditional_formatting
+                    for r in rng.rules if f"{date.column_letter}$1" in r.formula[0]]
+        self.assertTrue(any(f'CELL("protect",{date.column_letter}2)=0' in f
+                            for f in formulas))
+
+    def test_customization_covers_every_full_form_type(self):
         types = {row[0] for row in customization_rows([gt(), air()], {})}
-        with_customs = {t for t, fields in TYPE_FIELDS.items() if fields}
-        self.assertEqual(types, with_customs)
+        self.assertEqual(types, set(TYPE_FORM_FIELDS))
         rows = {(r[0], r[1]): r for r in customization_rows([gt(), air()], {})}
         self.assertEqual(rows[("Airfare", "Variant")][2:5],
                          ("Type of Class", "custom20", "Yes"))
+        # No current Airfare record is needed to know Phone/Fax/Internet
+        # still has Date; it is a positive fact from the full type sweep.
+        self.assertEqual(rows[("Phone/Fax/Internet", "Date")][2:5],
+                         ("Transaction Date", "transactionDate", "Yes"))
 
     def test_width_fits_longest_but_ignores_outlier(self):
         values = ["Taxi", "Bus", "Shuttle", "Ferry", "Taxi", "Bus", "Ferry",
@@ -224,7 +265,7 @@ class XlsxTests(unittest.TestCase):
         rows = {(t, h, f) for t, h, _l, f, *_ in customization_rows([gt(), air()], {})}
         self.assertIn(("Lodging - Group", "Days/Nights", "custom24"), rows)
         self.assertIn(("Lodging - Group", "# Rooms", "custom28"), rows)
-        opts = {(t, h): o for t, h, _l, _f, _r, o in customization_rows([gt(), air()], {})}
+        opts = {(t, h): o for t, h, _l, _f, _r, o, _e in customization_rows([gt(), air()], {})}
         self.assertIn("Van", opts[("Car Rental", "Variant")])
         # Same label, different lists: options must come per type.
         self.assertNotIn(("Travel Meals - Domestic",
@@ -322,6 +363,18 @@ class XlsxTests(unittest.TestCase):
         # GT row keeps its value, now under Variant.
         self.assertEqual(ws.cell(row=2, column=headers.index("Variant") + 1).value, "Taxi")
 
+
+    def test_absent_request_is_unlocked_for_a_type_change(self):
+        # An Undefined row has no Request; switching it to Ground
+        # Transportation makes Request required. A pink cell cannot be locked.
+        undef = ExpenseRecord("JJJJ0000", REPORT, 10, [
+            cell("expenseType", "Expense Type", "Undefined"),
+        ])
+        write_workbook(self.path, WorkbookData(REPORT, [undef]))
+        ws = load_workbook(self.path)[EXPENSES]
+        headers = [c.value for c in ws[1]]
+        request = ws.cell(row=2, column=headers.index("Request") + 1)
+        self.assertFalse(request.protection.locked)
 
     def test_sparse_standard_fields_use_live_lookup_not_static_grey(self):
         write_workbook(self.path, data())

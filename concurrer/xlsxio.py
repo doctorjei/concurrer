@@ -43,6 +43,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from .csvio import ExpenseRecord
+from .type_form_map import TYPE_FORM_FIELDS
 from .type_map import TYPE_FIELDS
 
 EXPENSES = "Expenses"
@@ -190,10 +191,9 @@ MERGED: dict[str, frozenset[tuple[str, str]]] = {
     }),
 }
 
-#: Operator-defined columns that always apply, even though their Concur source
-#: varies by expense type. Unlike custom-slot merges, every type has one of the
-#: listed sources, so they are never marked not-applicable.
-UNIVERSAL_MERGES = frozenset({"vendor"})
+#: The vendor column routes to either vendorName (card merchant) or vendor
+#: (editable directory field). It is not universal: a type with neither is
+#: not-applicable, and a retained value must turn red rather than be dropped.
 MERGED["vendor"] = frozenset({
     ("vendorName", "vendor name"),          # Locked card/merchant field.
     ("vendorName", "enter vendor name"),    # Same field, Undefined-type label.
@@ -284,6 +284,15 @@ def _type_options():
 OPTIONS_BY_TYPE, OPTIONS_BY_LABEL = _type_options()
 
 
+def _standard_options() -> dict[str, list[str]]:
+    """Fixed lists captured read-only from the editable Test Report form."""
+    raw = json.loads(Path(__file__).with_name("standard_options.json").read_text())
+    return {field: list(values) for field, values in raw.items()}
+
+
+STANDARD_OPTIONS = _standard_options()
+
+
 @dataclass(frozen=True)
 class Column:
     header: str
@@ -353,6 +362,34 @@ def plan_columns(records: Sequence[ExpenseRecord]) -> list[Column]:
                     header = f"{header} ({cell.name})"
                 taken.add(_norm(header))
                 rest[cell.name] = Column(header, cell.name)
+
+    # The current report cannot teach us fields from types it does not use.
+    # Add every non-per-diem field from the 67-type sweep so a type change has
+    # a column in which to satisfy its new schema. Values remain empty unless
+    # this particular record exposes that field.
+    for fields in TYPE_FORM_FIELDS.values():
+        for form in fields:
+            if is_per_diem(form.name, form.label):
+                continue
+            if any(form.name == f for _, f in LEADING):
+                continue
+            if merged_header(form.name, form.label):
+                continue
+            if form.name.startswith("custom"):
+                key = (form.name, _norm(form.label))
+                if key in meanings:
+                    continue
+                header = custom_header(form.name, form.label)
+                if _norm(header) in taken:
+                    header = f"{header} ({form.name})"
+                taken.add(_norm(header))
+                meanings[key] = Column(header, form.name, form.label)
+            elif form.name not in rest:
+                header = DISPLAY.get(form.name) or " ".join(form.label.split())
+                if _norm(header) in taken:
+                    header = f"{header} ({form.name})"
+                taken.add(_norm(header))
+                rest[form.name] = Column(header, form.name)
     # Merged columns always appear: a type change may route a value into them
     # even when no row on the report uses them yet.
     present = {_norm(c.header) for c in columns}
@@ -414,20 +451,38 @@ def customization_rows(
                 cell.name,
                 "Yes" if cell.required else "No",
                 "",
+                "Live",
             ))
-    for expense_type in sorted(TYPE_FIELDS):
-        for f in TYPE_FIELDS[expense_type]:
+    # Add known-positive fields from the complete manual-form sweep. An
+    # observed report row wins above, because card-feed provenance may use a
+    # different vendor control or locking. A manual absence is deliberately
+    # not recorded as a negative: only a live rehearsal can settle a target
+    # field that depends on card provenance or report linkage (Request).
+    headers = {_norm(column.header) for column in columns}
+    for expense_type, fields in TYPE_FORM_FIELDS.items():
+        for f in fields:
             if is_per_diem(f.name, f.label):
                 continue
+            header = merged_header(f.name, f.label)
+            if not header:
+                if f.name.startswith("custom"):
+                    header = custom_header(f.name, f.label)
+                else:
+                    header = next((h for h, name in LEADING if name == f.name),
+                                  DISPLAY.get(f.name) or " ".join(f.label.split()))
+            if _norm(header) not in headers or (expense_type, header) in seen:
+                continue
+            seen.add((expense_type, header))
             opts = (OPTIONS_BY_TYPE.get((expense_type, f.name))
                     or options.get((f.name, _norm(f.label))) or ())
             rows.append((
                 expense_type,
-                custom_header(f.name, f.label),
+                header,
                 " ".join(f.label.split()),
                 f.name,
                 "Yes" if f.required else "No",
                 " | ".join(opts),
+                "Manual",
             ))
     return rows
 
@@ -560,12 +615,13 @@ def build_workbook(data: WorkbookData) -> Workbook:
                 continue
             cell = cell_for(record, col)
             target = ws.cell(row=r, column=ci, value=cell.value if cell else None)
-            unlocked = cell is not None and not cell.locked
-            # Custom meaning columns stay editable even when n/a: a type change
-            # can make them apply. Conditional formatting shows applicability.
-            if (col.type_specific and col.header not in UNIVERSAL_MERGES
-                    ) or col.field.startswith("custom"):
-                unlocked = cell is None or not cell.locked
+            # Only a value Concur actually marked locked stays locked. A blank
+            # source cell must be editable: a type change can make Request,
+            # vendor, a standard field, or a custom meaning newly applicable.
+            # If the column truly does not apply, its live red conditional rule
+            # and the preflight gate reject a nonblank value before any Save.
+            # Pink must never mean "required but impossible to fill".
+            unlocked = cell is None or not cell.locked
             target.protection = target.protection.copy(locked=not unlocked)
             if cell is not None and cell.locked:
                 target.fill = FILL_BLOCKED
@@ -625,7 +681,19 @@ def build_workbook(data: WorkbookData) -> Workbook:
                 dv.errorTitle = "New location"
                 ws.add_data_validation(dv)
                 dv.add(rng)
-        elif opts:
+            elif col.field == "travelRequestExpenseId" and seen:
+                # A Request is a Concur picker, not arbitrary prose. Existing
+                # exact values are a conservative report-local list; live
+                # preflight will re-read its current picker before a write.
+                list_ranges[col.header] = list_range(seen, col.header)
+                dv = DataValidation(type="list", formula1=list_ranges[col.header],
+                                    allow_blank=True, showErrorMessage=True)
+                dv.error = "Choose a Request listed for this report."
+                dv.errorTitle = "Request"
+                ws.add_data_validation(dv)
+                dv.add(rng)
+        elif opts or col.field in STANDARD_OPTIONS:
+            opts = opts or STANDARD_OPTIONS[col.field]
             list_ranges[col.header] = list_range(opts, col.header)
             dv = DataValidation(type="list", formula1=list_ranges[col.header],
                                 allow_blank=True, showErrorMessage=True)
@@ -647,22 +715,34 @@ def build_workbook(data: WorkbookData) -> Workbook:
             # follows edits and Expense Type changes. Precedence runs top to
             # bottom; the reds stop further rules.
             cu = _q(CUSTOMIZATION)
-            known = (f'COUNTIFS({cu}!$A:$A,${type_letter}2)>0')
             hasrow = (f'COUNTIFS({cu}!$A:$A,${type_letter}2,'
                        f'{cu}!$B:$B,{letter}$1)>0')
-            na = f'AND({known},NOT({hasrow}))'
+            live = (f'COUNTIFS({cu}!$A:$A,${type_letter}2,'
+                    f'{cu}!$H:$H,"Live")>0')
+            manual = (f'COUNTIFS({cu}!$A:$A,${type_letter}2,'
+                      f'{cu}!$H:$H,"Manual")>0')
+            # Live observation is definitive for this report/provenance. The
+            # manual sweep is exhaustive for custom fields, but a missing
+            # ordinary field can depend on card provenance or report linkage.
+            definite = f'OR({live},{manual})' if col.type_specific else live
+            na = f'AND({definite},NOT({hasrow}))'
             req = (f'IFERROR(INDEX({cu}!$E:$E,MATCH(${type_letter}2&"|"&'
                    f'{letter}$1,{cu}!$G:$G,0))="Yes",FALSE)')
             ok = f'NOT({na})'
+            # Keep a live locked source value black/red-text. Type changes may
+            # make it invalid (the N/A red above still wins), but otherwise a
+            # Date/Currency/Payment Type card fact must not turn green merely
+            # because the target type also requires it.
+            editable = f'CELL("protect",{letter}2)=0'
             ws.conditional_formatting.add(
                 rng, FormulaRule(
-                    formula=[f'AND({letter}2<>"",{ok},'
+                    formula=[f'AND({editable},{letter}2<>"",{ok},'
                              f'COUNTIF({list_ranges[col.header]},{letter}2)=0)']
                     if col.header in list_ranges else ['FALSE'],
                     fill=FILL_WRONG, stopIfTrue=True))
             ws.conditional_formatting.add(
                 rng, FormulaRule(
-                    formula=[f'AND({letter}2<>"",'
+                    formula=[f'AND({editable},{letter}2<>"",'
                              f'IFERROR(OR(INT({letter}2)<>{letter}2,'
                              f'{letter}2<0),TRUE))']
                     if col.header in WHOLE_NUMBER else ['FALSE'],
@@ -671,16 +751,16 @@ def build_workbook(data: WorkbookData) -> Workbook:
                 rng, FormulaRule(formula=[f'AND({na},{letter}2<>"")'],
                                  fill=FILL_WRONG, stopIfTrue=True))
             ws.conditional_formatting.add(
-                rng, FormulaRule(formula=[f'AND({ok},{req},{letter}2="")'],
+                rng, FormulaRule(formula=[f'AND({editable},{ok},{req},{letter}2="")'],
                                  fill=FILL_REQUIRED))
             ws.conditional_formatting.add(
-                rng, FormulaRule(formula=[f'AND({ok},{req},{letter}2<>"")'],
+                rng, FormulaRule(formula=[f'AND({editable},{ok},{req},{letter}2<>"")'],
                                  fill=FILL_GOOD))
             ws.conditional_formatting.add(
-                rng, FormulaRule(formula=[f'AND({na},{letter}2="")'],
+                rng, FormulaRule(formula=[f'AND({editable},{na},{letter}2="")'],
                                  fill=FILL_NA))
             ws.conditional_formatting.add(
-                rng, FormulaRule(formula=[f'AND({ok},NOT({req}))'],
+                rng, FormulaRule(formula=[f'AND({editable},{ok},NOT({req}))'],
                                  fill=FILL_OPTIONAL))
 
     _fit_columns(ws, 1)
@@ -732,13 +812,16 @@ def build_workbook(data: WorkbookData) -> Workbook:
     # --- Backend Data (read-only reference).
     _read_only_banner(custom)
     _header_row(custom, 3, ["Expense Type", "Column", "Concur Label",
-                            "Concur Field", "Required", "Options", "Key"])
+                            "Concur Field", "Required", "Options", "Key",
+                            "Evidence"])
     for r, row in enumerate(customization_rows(data.records, data.options),
                                start=4):
-        for c, v in enumerate(row, start=1):
+        for c, v in enumerate(row[:6], start=1):
             custom.cell(row=r, column=c, value=v)
         custom.cell(row=r, column=7, value=f"=A{r}&\"|\"&B{r}")
+        custom.cell(row=r, column=8, value=row[6])
     custom.column_dimensions["G"].hidden = True
+    custom.column_dimensions["H"].hidden = True
     _fit_columns(custom, 3, ceiling=100)
     custom.freeze_panes = "A4"
     _protect(custom)
@@ -914,6 +997,10 @@ def push_rows(
         origin: dict[str, str] = {}
         for (name, meaning), value in values.items():
             blank = not str(value).strip()
+            # Blank means no change. Preserve the type key so a nonblank
+            # merged cell can never evade the no-target-type refusal.
+            if blank and (name, meaning) != TYPE_KEY:
+                continue
             if name == MERGED_FIELD:
                 field_name = route_merged(routing, expense_type, meaning)
                 if field_name is None:

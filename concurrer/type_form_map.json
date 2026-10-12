@@ -1,0 +1,5106 @@
+{
+  "Agent/Agency Booking Fee": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Agency",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Airfare": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendor",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Destination",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Type of Class",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Reservation Source",
+      "locked": false,
+      "name": "custom17",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Airline Fees": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendor",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Type of Fee",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "All Inclusive Per Diem (Meals/Lodging)": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Departure Time (first day of travel)",
+      "locked": false,
+      "name": "custom17",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Return Time (last day travel)",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Number of Days",
+      "locked": false,
+      "name": "custom28",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Audio/Visual Supplies": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Awards & Sponsorships": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Books & Publications": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Car Rental": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendor",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Rental Location",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Rental Class",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Reservation Source",
+      "locked": false,
+      "name": "custom17",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Chartered Aircraft": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Destination",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": true,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Chartered Bus": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": true,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Computer Supplies/Peripherals": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Conferences/Seminar/Workshop Registration": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Event Location",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Courier/Shipping/Freight": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Currency Exchange/Bank Fees": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Entertainment Expense": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Total Number of Attendees",
+      "locked": false,
+      "name": "custom28",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Entry Fee/Ticket": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Event Location",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Event Tickets": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Event Location",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Food & Beverages - Alcohol": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Total Number of Attendees",
+      "locked": false,
+      "name": "custom28",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Food & Beverages - Breakfast": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Total Number of Attendees",
+      "locked": false,
+      "name": "custom28",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Food & Beverages - Dinner": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Total Number of Attendees",
+      "locked": false,
+      "name": "custom28",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Food & Beverages - Lunch": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Total Number of Attendees",
+      "locked": false,
+      "name": "custom28",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Food & Beverages - Other": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Fraudulent/Disputed PCard Charge": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Purchase Description/Justification (64 char max)",
+      "locked": false,
+      "name": "businessPurpose",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Benefit to Grant or University/Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Freight/Shipping/Courier": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Fuel - Car Rental": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Fuel - Personal Car": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Fuel - State Vehicle": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "State Vehicle/Decal/Vessel Number",
+      "locked": false,
+      "name": "custom14",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Ground Transportation": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Type of Ground Transportation",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Were other travelers with you?",
+      "locked": false,
+      "name": "custom29",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Immigration Fees": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "City of Purchase",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Lab Supplies": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Laundry Services": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Number of consecutive days of travel",
+      "locked": false,
+      "name": "custom28",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Library Resources <$250": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Lodging": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendor",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Lodging Location",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Reservation Source",
+      "locked": false,
+      "name": "custom17",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Are you sharing a room?",
+      "locked": false,
+      "name": "custom29",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Lodging - Deposit / Refund": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendor",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Lodging Location",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Lodging - Group": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendor",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Lodging Location",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Number of Rooms",
+      "locked": false,
+      "name": "custom28",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Number of Nights",
+      "locked": false,
+      "name": "custom24",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Lodging - Other Accommodations": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Lodging Location",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Type of Accomodation",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Are you sharing a room?",
+      "locked": false,
+      "name": "custom29",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Number of nights?",
+      "locked": false,
+      "name": "custom28",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Memberships & Dues": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Length of Membership",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Mileage - Personal Car": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Type of Mileage",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "From",
+      "locked": false,
+      "name": "fromLocation",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "To",
+      "locked": false,
+      "name": "toLocation",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Were other travelers with you?",
+      "locked": false,
+      "name": "custom29",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": true,
+      "name": "paymentType",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Distance",
+      "locked": false,
+      "name": "businessDistance",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Amount",
+      "locked": true,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": true,
+      "name": "transactionCurrencyName",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Mileage - Reduction": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Miscellaneous Operating Expenses": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": true,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Miscellaneous Supplies": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": true,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Other Services - Non Employees": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "City of Purchase",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Parking/Tolls/Road Charges": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Passports/Visa Fees": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Per Diem/Meal Adjustment": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Personal Expense": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Explanation",
+      "locked": false,
+      "name": "comment",
+      "required": true,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Phone/Fax/Internet": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Postage": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Printing/Photocopying": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Professional Entertainment Services": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Event Location",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Professional Licenses": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Publishing Fees": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Recruitment Expenses": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Rental of Furniture & Equipment": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Purchase Description/Justification (64 char max)",
+      "locked": false,
+      "name": "businessPurpose",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Length of Rental",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Benefit to Grant or University/Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Rental of Space - External": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Purchase Description/Justification (64 char max)",
+      "locked": false,
+      "name": "businessPurpose",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Length of Rental",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Benefit to Grant or University/Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Small Hand Tools <$10,000": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": true,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Specialty Printing": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Subscriptions": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Supplies - Office General": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Tips/Gratuities": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Type of Tip/Gratuity",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Tournament/Competition Fees": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Event Location",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Train/Rail": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Destination",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Travel Meals - Domestic": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Departure Time (first day of travel)",
+      "locked": false,
+      "name": "custom17",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Return Time (last day of travel)",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Number of Breakfasts",
+      "locked": false,
+      "name": "custom24",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Number of Lunches",
+      "locked": false,
+      "name": "custom26",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Number of Dinners",
+      "locked": false,
+      "name": "custom27",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Amount",
+      "locked": true,
+      "name": "transactionAmount",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "UFFND Air Card charges only": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendor",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Destination",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Type of Class",
+      "locked": false,
+      "name": "custom20",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Reservation Source",
+      "locked": false,
+      "name": "custom17",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "VAT Tax - Goods & Services": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "City of Purchase",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "VAT Tax - Travel": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Vendor Name",
+      "locked": false,
+      "name": "vendorName",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "City of Purchase",
+      "locked": false,
+      "name": "location",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ],
+  "Vaccinations": [
+    {
+      "label": "Expense Type",
+      "locked": false,
+      "name": "expenseType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Trip Type",
+      "locked": false,
+      "name": "custom13",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Business Purpose",
+      "locked": false,
+      "name": "custom12",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Transaction Date",
+      "locked": false,
+      "name": "transactionDate",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Payment Type",
+      "locked": false,
+      "name": "paymentType",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Amount",
+      "locked": false,
+      "name": "transactionAmount",
+      "required": true,
+      "widget": "input/text"
+    },
+    {
+      "label": "Currency",
+      "locked": false,
+      "name": "transactionCurrencyName",
+      "required": true,
+      "widget": "combobox"
+    },
+    {
+      "label": "Traveler's myUFL TA/UF GO Request ID",
+      "locked": false,
+      "name": "custom21",
+      "required": false,
+      "widget": "input/text"
+    },
+    {
+      "label": "Comment",
+      "locked": false,
+      "name": "comment",
+      "required": false,
+      "widget": "textarea/textarea"
+    }
+  ]
+}
