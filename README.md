@@ -116,6 +116,8 @@ only opens a menu. It passes only with **both**
 | `nav.py` | Open one expense by one-based row or stable ID; bulk-wizard rejected |
 | `widgets.py` | Field inventory + strict write helpers (`select_combobox_exact`, `select_search_combobox_exact` for Location, `select_payment_type_exact`, `fill_text_exact`) |
 | `type_map.py` / `type_map.json` | Versioned 67-type custom-field schema + loss/compat/conditional helpers |
+| `type_form_map.py` / `type_form_map.json` | Full 67-type manual-form schema (standard + custom field presence) for the type-aware workbook |
+| `standard_options.json` | Exact editable-form lists for Payment Type and Currency |
 | `banners.py` | Blocking-banner inspection; presents by default, acts only on an explicit `--banner-action` |
 | `fields.py` | Field inventory + option reader |
 | `newexp.py` | Create path: `--list-types` / `--type` / `--save` |
@@ -215,7 +217,7 @@ Sheets, in order:
 | `Expenses` | One row per expense, UF column order. Identity is the last column (`Expense ID`). |
 | `Meals & Per Diem` | **READ-ONLY (Do not edit).** Per-diem rows (Travel Meals, All Inclusive Per Diem, Per Diem/Meal Adjustment) live here, with their Departure/Return Time and meal-count fields shown for the first time. Never read by write-back. |
 | `Report Details` | **READ ONLY.** Report-wide facts including `Report ID`, which write-back should take from here. |
-| `Backend Data` | **READ ONLY.** (expense type, column) map for all 67 types plus every standard field observed on the report, with required flags and option lists. |
+| `Backend Data` | **READ ONLY.** (expense type, column) map with 67-type manual-form positives plus live-report facts, required flags, option lists, and evidence source. |
 | `Lists`, `Variants`, `Orig` | Hidden. Dropdown sources, per-type Variant lists, and export-time values backing the blocked-cell check. |
 
 Columns are type-routed merges: `custom20` becomes one `Variant` column, the
@@ -237,10 +239,12 @@ Type changes:
 
 **Known limitations:** Travel Allowance / per diem is out of scope (the Meals
 sheet displays generated rows; it never creates, regenerates or edits them).
-Changing a row to a type whose type-specific columns are absent from the sheet
-needs a re-export. A column whose options differ per type (e.g. Departure
-Time) gets no fixed dropdown. LibreOffice cannot resize or format on a
-protected sheet; Excel can.
+All fields from the 67-type manual-form sweep are present for type-aware
+editing, but the **batch type-change writer is still under construction**. A
+field whose target applicability depends on card provenance or report linkage
+is deliberately neutral until the live rehearsal resolves it. A column whose
+options differ per type (e.g. Departure Time) gets no fixed dropdown.
+LibreOffice cannot resize or format on a protected sheet; Excel can.
 
 #### Writing back from the workbook
 
@@ -264,6 +268,12 @@ expense types and `custom24` on others, and `custom28` itself carries two
 different meanings. So every column is routed **per row, by that row's own
 expense type**, using the Backend Data sheet — the same (type, column) table
 the cell colours look up, which keeps the colours and the writer from drifting.
+
+Before `pushxlsx` routes any rows, requests credentials, or opens a browser,
+it mirrors the workbook's state rules. Any bright-red invalid cell, or a
+required-empty pink cell on an edited row, refuses the **whole batch** and
+names each expense/row/column locally. Pink means "must fill this in"; red
+means correct or clear it before the batch can start.
 
 Three situations are refused rather than guessed:
 
