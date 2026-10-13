@@ -80,6 +80,16 @@ DISPLAY = {
     "postedAmount": "Amount in USD",
 }
 
+#: Fields Concur shows only on foreign-currency expenses: on a home-currency
+#: (USD) expense they are absent from the form whatever the expense type, so
+#: type-level schema evidence alone would wrongly mark them required.
+FOREIGN_ONLY = frozenset({"exchangeRate", "postedAmount"})
+HOME_CURRENCY = "(USD)"
+
+
+def is_home_currency(currency: str) -> bool:
+    return HOME_CURRENCY in currency
+
 #: Search-backed comboboxes: their "options" are search results, not a list.
 SEARCH_FIELDS = frozenset({"location", "vendor", "travelRequestExpenseId"})
 
@@ -613,6 +623,9 @@ def build_workbook(data: WorkbookData) -> Workbook:
     last = n + 1
     type_letter = get_column_letter(
         next(i for i, c in enumerate(columns, 1) if c.field == "expenseType"))
+    currency_letter = get_column_letter(
+        next(i for i, c in enumerate(columns, 1)
+             if c.field == "transactionCurrencyName"))
     for r, record in enumerate(exp_recs, start=2):
         for ci, col in enumerate(columns, start=1):
             if col.header == ID_HEADER:
@@ -738,6 +751,9 @@ def build_workbook(data: WorkbookData) -> Workbook:
                                     or (col.routes and col.header != "vendor"))
             definite = f'OR({live},{manual})' if custom_applicability else live
             na = f'AND({definite},NOT({hasrow}))'
+            if col.field in FOREIGN_ONLY:
+                na = (f'OR({na},ISNUMBER(SEARCH("{HOME_CURRENCY}",'
+                      f'${currency_letter}2)))')
             req = (f'IFERROR(INDEX({cu}!$E:$E,MATCH(${type_letter}2&"|"&'
                    f'{letter}$1,{cu}!$G:$G,0))="Yes",FALSE)')
             ok = f'NOT({na})'
@@ -1013,6 +1029,7 @@ def workbook_issues(path: Path) -> list[WorkbookIssue]:
         allowed = _validation_options(wb, ws, headers)
         issues: list[WorkbookIssue] = []
         type_at = headers.index("Expense Type") + 1
+        currency_at = headers.index("Currency") + 1
         for row_number in range(2, ws.max_row + 1):
             expense_id = str(ws.cell(row_number, id_at).value or "").strip()
             if not expense_id:
@@ -1042,10 +1059,15 @@ def workbook_issues(path: Path) -> list[WorkbookIssue]:
                 definite_na = (not field_facts and
                                (expense_type in live_types or
                                 (is_custom and expense_type in manual_types)))
+                if source_field in FOREIGN_ONLY and is_home_currency(
+                        str(ws.cell(row_number, currency_at).value or "")):
+                    definite_na = True
                 if definite_na and value.strip():
                     issues.append(WorkbookIssue(expense_id, row_number, header,
                         "not-applicable", f"{expense_type!r} has no route for this value"))
                     continue
+                if definite_na:
+                    continue  # blank N/A is grey, never required
                 if cell.protection.locked:
                     old = (str(orig.cell(original_row, original_at[header]).value or "")
                            if header in original_at else "")

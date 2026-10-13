@@ -179,6 +179,32 @@ class XlsxTests(unittest.TestCase):
         wb.save(self.path)
         self.assertIn("locked-deviation", {issue.kind for issue in workbook_issues(self.path)})
 
+    def test_exchange_fields_do_not_apply_to_usd_rows(self):
+        # Concur shows Exchange Rate / Amount in USD only on foreign-currency
+        # expenses, so live evidence from a JPY row of the same type must not
+        # make them required on a USD row (operator 2026-10-13).
+        jpy = ExpenseRecord("CCCC3333", REPORT, 3, [
+            cell("expenseType", "Expense Type", "Ground Transportation", required=True),
+            cell("transactionCurrencyName", "Currency", "Japan, Yen (JPY)", locked=True),
+            cell("exchangeRate", "Exchange Rate", "0.0064", locked=True, required=True),
+            cell("postedAmount", "Amount in USD", "7.05", locked=True, required=True),
+        ])
+        write_workbook(self.path, WorkbookData(REPORT, [gt(), jpy], {}, {}, {}))
+        wb = load_workbook(self.path)
+        ws = wb[EXPENSES]
+        headers = [c.value for c in ws[1]]
+        # Edit the USD row so the edited-row pink rule is active for it.
+        ws.cell(2, headers.index("Comment") + 1).value = "edited"
+        wb.save(self.path)
+        flagged = {(i.header, i.kind) for i in workbook_issues(self.path)}
+        for header in ("Exchange Rate", "Amount in USD"):
+            self.assertNotIn((header, "required-empty"), flagged)
+            letter = get_column_letter(headers.index(header) + 1)
+            rules = [r.formula[0] for rng in ws.conditional_formatting
+                     if str(rng.sqref).startswith(f"{letter}2:")
+                     for r in rng.rules]
+            self.assertTrue(any('SEARCH("(USD)"' in f for f in rules))
+
     def test_request_payment_and_currency_are_constrained_dropdowns(self):
         # Payment/Currency are captured fixed Concur lists; Request is the
         # exact report-local values already observed on applicable expenses.
