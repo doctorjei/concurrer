@@ -179,6 +179,25 @@ class XlsxTests(unittest.TestCase):
         wb.save(self.path)
         self.assertIn("locked-deviation", {issue.kind for issue in workbook_issues(self.path)})
 
+    def test_untouched_off_list_value_does_not_block_the_batch(self):
+        # A freshly exported "Undefined" type is Concur's own state: it is
+        # never written, so it must not block an unrelated edit elsewhere.
+        undef = ExpenseRecord("DDDD4444", REPORT, 3, [
+            cell("expenseType", "Expense Type", "Undefined", required=True),
+        ])
+        write_workbook(self.path, WorkbookData(REPORT, [gt(), undef], {}, {}, {}))
+        self.assertNotIn("off-list", {i.kind for i in workbook_issues(self.path)})
+        wb = load_workbook(self.path)
+        ws = wb[EXPENSES]
+        headers = [c.value for c in ws[1]]
+        ws.cell(2, headers.index("Comment") + 1).value = "edited"
+        wb.save(self.path)
+        self.assertNotIn("off-list", {i.kind for i in workbook_issues(self.path)})
+        # Typing an off-list value is still refused.
+        ws.cell(2, headers.index("Variant") + 1).value = "Plane"
+        wb.save(self.path)
+        self.assertIn("off-list", {i.kind for i in workbook_issues(self.path)})
+
     def test_exchange_fields_do_not_apply_to_usd_rows(self):
         # Concur shows Exchange Rate / Amount in USD only on foreign-currency
         # expenses, so live evidence from a JPY row of the same type must not

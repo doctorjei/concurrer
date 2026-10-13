@@ -8,11 +8,19 @@ Default mode is a fresh-live-state dry run::
 
     python -m concurrer.pushcsv --csv expenses.csv
 
-``--commit`` is structurally limited to the throwaway Test Report. The report
-ID comes from the CSV's required identity column; a real-report CSV fails
+``--commit`` is structurally limited to the throwaway Test Report, plus the
+one confirmed real report (``safety.CONFIRMED_REPORT_IDS``). The report ID
+comes from the CSV's required identity column; any other real-report CSV fails
 before credentials are resolved or a browser is opened::
 
     python -m concurrer.pushcsv --csv test-report.csv --commit
+
+A confirmed real report additionally needs the plan token its dry run printed.
+The commit re-reads live state, rebuilds the plan, and refuses unless the token
+matches, so only the exact reviewed plan can be written::
+
+    python -m concurrer.pushcsv --csv cced.csv                    # prints PLAN TOKEN
+    python -m concurrer.pushcsv --csv cced.csv --commit --confirm <token>
 
 A batch is not transactional — Concur saves each expense individually. To make
 that limitation honest rather than surprising, *all* rows are preflighted
@@ -51,7 +59,12 @@ from .edit import (
 )
 from .login import authenticated_context
 from .nav import open_expense_by_id
-from .safety import test_report_write_grant
+from .safety import (
+    CONFIRMED_REPORT_IDS,
+    plan_token,
+    test_report_write_grant,
+    write_grant,
+)
 from .secrets import resolve
 from .widgets import field_inventory
 
@@ -309,12 +322,22 @@ def commit_batch(page, preflight: BatchPreflight) -> int:
     return 0
 
 
+def batch_token(preflight: BatchPreflight) -> str:
+    """The reviewable fingerprint of exactly what this batch would write."""
+    return plan_token(preflight.report_id, [
+        (_id_key(row_plan.expense_id), change.name, change.before, change.after)
+        for row_plan in preflight.actionable
+        for change in row_plan.changes
+    ])
+
+
 def _run(
     sheet: Sheet,
     report_id: str,
     *,
     commit: bool,
     banner_actions: Mapping[str, str],
+    confirm: str | None = None,
 ) -> int:
     """Authenticate once, preflight all rows, then optionally commit."""
     creds = resolve()
@@ -328,10 +351,49 @@ def _run(
         print(format_preflight(preflight))
         if not preflight.clean:
             return 2
+        confirmed = report_id in CONFIRMED_REPORT_IDS
+        if confirmed:
+            token = batch_token(preflight)
+            print(f"\n  PLAN TOKEN: {token}  (real report {report_id}; to write "
+                  f"exactly this plan: --commit --confirm {token})")
         if not commit:
             print("\nDry run only — no fields filled, no write grant requested, no Save clicked.")
             return 0
+        if confirmed:
+            # Raises before any fill unless the reviewed token equals the plan
+            # just rebuilt from live state.
+            with write_grant(report_id, reviewed_token=confirm, live_token=token):
+                return commit_batch(page, preflight)
         return commit_batch(page, preflight)
+
+
+def run_commit(
+    sheet: Sheet,
+    report_id: str,
+    *,
+    confirm: str | None,
+    banner_actions: Mapping[str, str],
+) -> int:
+    """CLI ``--commit`` entry shared by the CSV and xlsx drivers.
+
+    Every refusal here happens before credentials or a browser. The Test Report
+    keeps its token-free grant; a confirmed real report must carry a token,
+    which ``_run`` then checks against the live plan.
+    """
+    if report_id in CONFIRMED_REPORT_IDS:
+        if not confirm:
+            raise AssertionError(
+                f"refusing --commit on real report {report_id!r} without "
+                "--confirm <plan token>; run the dry run first and review its plan"
+            )
+        return _run(sheet, report_id, commit=True, confirm=confirm,
+                    banner_actions=banner_actions)
+    # The grant refuses any other real report first, so its boundary message
+    # wins over the --confirm misuse below.
+    with test_report_write_grant(report_id):
+        if confirm:
+            raise ValueError("--confirm applies only to a confirmed real report")
+        return _run(sheet, report_id, commit=True, banner_actions=banner_actions)
 
 
 def main() -> int:
@@ -342,7 +404,13 @@ def main() -> int:
     ap.add_argument(
         "--commit",
         action="store_true",
-        help="persist only when the CSV identifies the throwaway Test Report",
+        help="persist only when the CSV identifies the Test Report or the "
+        "confirmed real report",
+    )
+    ap.add_argument(
+        "--confirm",
+        metavar="PLAN_TOKEN",
+        help="with --commit on a confirmed real report: the PLAN TOKEN its dry run printed",
     )
     ap.add_argument(
         "--banner-action",
@@ -357,14 +425,14 @@ def main() -> int:
         sheet = read_expenses(args.csv)
         report_id = single_report_id(sheet)
         banner_actions = parse_banner_actions(args.banner_action)
+        if args.confirm and not args.commit:
+            raise ValueError("--confirm is only meaningful with --commit")
         if args.commit:
             # The structural boundary must precede *everything* that can touch
             # credentials or a browser. No CLI argument can widen it: report ID
             # is required inside the CSV and checked here before resolve().
-            with test_report_write_grant(report_id):
-                return _run(
-                    sheet, report_id, commit=True, banner_actions=banner_actions
-                )
+            return run_commit(sheet, report_id, confirm=args.confirm,
+                              banner_actions=banner_actions)
         return _run(sheet, report_id, commit=False, banner_actions=banner_actions)
     except (BatchPlanError, PlanError, ValueError, AssertionError) as exc:
         print(f"pushcsv plan error: {exc}", file=sys.stderr)

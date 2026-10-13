@@ -1075,6 +1075,9 @@ def workbook_issues(path: Path) -> list[WorkbookIssue]:
                         issues.append(WorkbookIssue(expense_id, row_number, header,
                             "locked-deviation", "locked Concur value differs from export"))
                     continue
+                untouched = value == (
+                    str(orig.cell(original_row, original_at[header]).value or "")
+                    if header in original_at else "")
                 required = any(fact[1] for fact in field_facts)
                 if changed and required and not value.strip():
                     issues.append(WorkbookIssue(expense_id, row_number, header,
@@ -1082,11 +1085,14 @@ def workbook_issues(path: Path) -> list[WorkbookIssue]:
                     continue
                 choices = set().union(*(fact[2] for fact in field_facts)) if field_facts else set()
                 choices |= allowed.get(header, set())
-                if value.strip() and choices and value not in choices:
+                # An untouched value is Concur's current state (e.g. an
+                # "Undefined" type) and is never written, so it stays red as a
+                # prompt but cannot block other rows' writes.
+                if value.strip() and choices and value not in choices and not untouched:
                     issues.append(WorkbookIssue(expense_id, row_number, header,
                         "off-list", f"{value!r} is not an allowed option"))
                     continue
-                if header in WHOLE_NUMBER and value.strip():
+                if header in WHOLE_NUMBER and value.strip() and not untouched:
                     try:
                         number = Decimal(value)
                         invalid_number = number < 0 or number != number.to_integral_value()

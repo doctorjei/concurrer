@@ -4,17 +4,22 @@ Three tiers:
 
   NEVER      submit / approve / reject / recall / void / delete / duplicate /
              allocate / combine / remove / discard. No grant unlocks these.
-  GRANTABLE  save and field edits. Permitted only for the Test Report while the
-             live browser URL is still its Concur expense route.
+  GRANTABLE  save and field edits. Permitted only for the Test Report — or the
+             one confirmed real report below — while the live browser URL is
+             still that report's Concur expense route.
   FREE       everything else — Edit, Details, View Alerts, row checkboxes.
 
 The write boundary is intentionally structural. ``authorize_writes()`` refuses
-any report other than ``TEST_REPORT_ID``; no flag, environment variable, or
-caller's label can widen it.
+any report other than ``TEST_REPORT_ID`` and ``CONFIRMED_REPORT_IDS``; no flag,
+environment variable, or caller's label can widen it. A confirmed real report
+is granted only when the operator's ``--confirm`` token equals the token of the
+plan just re-read live (``plan_token``), so a commit can only apply the exact
+plan that was reviewed in a dry run.
 """
 
 from __future__ import annotations
 
+import hashlib
 import re
 from contextlib import contextmanager
 from urllib.parse import urlparse
@@ -22,6 +27,12 @@ from urllib.parse import urlparse
 # The only report any tooling may write to. Empty, named "Test Report".
 TEST_REPORT_ID = "B857BA45DBC24EDB8420"
 CONCUR_ORIGIN = "https://us2.concursolutions.com"
+
+# Real reports with the operator's narrow write exception (approved
+# 2026-10-01, first exercised 2026-10-13): one named report, dry run first,
+# and a commit only with the token of the exact plan the operator reviewed.
+CCED_REPORT_ID = "506EC055FE79452BB943"
+CONFIRMED_REPORT_IDS = frozenset({CCED_REPORT_ID})
 
 # Never permitted, under any grant.
 NEVER_WORDS = (
@@ -53,16 +64,43 @@ MENU_TRIGGER_WIDGET = "menu-button-trigger"
 _authorized_report: str | None = None
 
 
-def authorize_writes(report_id: str) -> None:
-    """Grant Test Report write access for the current process.
+def plan_token(report_id: str, changes) -> str:
+    """Short fingerprint of an exact write plan.
 
+    ``changes`` is an iterable of ``(expense_id, field, before, after)``. Order
+    is irrelevant; every value is significant, so any live drift or any edit to
+    the input file yields a different token.
+    """
+    lines = sorted("\x1f".join(str(part) for part in change) for change in changes)
+    digest = hashlib.sha256("\x1e".join([report_id.upper(), *lines]).encode())
+    return digest.hexdigest()[:12]
+
+
+def authorize_writes(
+    report_id: str,
+    *,
+    reviewed_token: str | None = None,
+    live_token: str | None = None,
+) -> None:
+    """Grant write access to one report for the current process.
+
+    The Test Report needs no token. A confirmed real report needs the token the
+    operator reviewed to equal the token of the plan just built from live state.
     The grant is checked against the live URL at every guarded write. It never
     enables actions in the permanent deny tier.
     """
-    if report_id != TEST_REPORT_ID:
+    if report_id in CONFIRMED_REPORT_IDS:
+        if not reviewed_token or not live_token or reviewed_token != live_token:
+            raise AssertionError(
+                f"refusing to authorize writes against {report_id!r}: the "
+                f"reviewed plan token {reviewed_token!r} does not match the "
+                f"live plan token {live_token!r}; re-run the dry run and review"
+            )
+    elif report_id != TEST_REPORT_ID:
         raise AssertionError(
             f"refusing to authorize writes against {report_id!r}; only the "
-            f"throwaway test report {TEST_REPORT_ID!r} may be written to"
+            f"throwaway test report {TEST_REPORT_ID!r} may be written to "
+            f"(or {CCED_REPORT_ID!r} with a reviewed --confirm plan token)"
         )
     global _authorized_report
     _authorized_report = report_id
@@ -76,13 +114,20 @@ def revoke_writes() -> None:
 
 
 @contextmanager
-def test_report_write_grant(report_id: str):
-    """Authorize the Test Report for one operation and always revoke afterward."""
-    authorize_writes(report_id)
+def write_grant(report_id: str, **tokens):
+    """Authorize one report for one operation and always revoke afterward."""
+    authorize_writes(report_id, **tokens)
     try:
         yield
     finally:
         revoke_writes()
+
+
+@contextmanager
+def test_report_write_grant(report_id: str):
+    """Authorize the Test Report for one operation and always revoke afterward."""
+    with write_grant(report_id):
+        yield
 
 
 def grant_active() -> bool:
@@ -121,11 +166,11 @@ def grant_covers(url: str) -> bool:
 
 
 def assert_write_authorized(url: str) -> None:
-    """Require the Test Report grant before a non-click field mutation."""
+    """Require an active report grant before a non-click field mutation."""
     if not grant_covers(url):
         raise AssertionError(
             f"refusing field edit: live URL {url!r} is not the authorized "
-            "Test Report"
+            "report"
         )
 
 

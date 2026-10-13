@@ -22,6 +22,7 @@ from concurrer.pushcsv import (
     BatchPlanError,
     BatchPreflight,
     _run,
+    batch_token,
     commit_batch,
     main,
     preflight_batch,
@@ -33,6 +34,7 @@ from concurrer.safety import TEST_REPORT_ID, grant_active
 EXPENSE_A = "CE96ABA11AB1674AA77FBBC595109CB2"
 EXPENSE_B = "077DDCA88361BC4DB005BDDD9BBC3BF4"
 REAL_REPORT = "506EC055FE79452BB943"
+OTHER_REPORT = "0123456789ABCDEF0123"
 
 
 def fields(*, comment: str = "before"):
@@ -209,6 +211,58 @@ class DryRunTests(unittest.TestCase):
         commit.assert_not_called()
         self.assertFalse(grant_active())
 
+    def _real_preflight(self, after="after"):
+        sheet = sheet_for((EXPENSE_A, after))
+        return sheet, BatchPreflight(
+            REAL_REPORT,
+            sheet,
+            PushPlan(row_plans=[RowPlan(EXPENSE_A, [FieldChange("comment", "before", after)])]),
+            edit_plans={EXPENSE_A: object()},
+        )
+
+    def _run_real(self, preflight, sheet, **kwargs):
+        out = io.StringIO()
+        seen = []
+        with (
+            patch(
+                "concurrer.pushcsv.resolve",
+                return_value=SimpleNamespace(
+                    concur_username="concur", ufl_username="ufl", ufl_password="password"
+                ),
+            ),
+            patch("concurrer.pushcsv.authenticated_context", return_value=context_for(object())),
+            patch("concurrer.pushcsv.preflight_batch", return_value=preflight),
+            patch("concurrer.pushcsv.commit_batch",
+                  side_effect=lambda *_a: seen.append(grant_active()) or 0) as commit,
+            redirect_stdout(out),
+        ):
+            status = _run(sheet, REAL_REPORT, banner_actions={}, **kwargs)
+        return status, out.getvalue(), commit, seen
+
+    def test_real_report_dry_run_prints_plan_token_and_never_commits(self):
+        sheet, preflight = self._real_preflight()
+        status, out, commit, _ = self._run_real(preflight, sheet, commit=False)
+        self.assertEqual(status, 0)
+        self.assertIn(f"PLAN TOKEN: {batch_token(preflight)}", out)
+        commit.assert_not_called()
+        self.assertFalse(grant_active())
+
+    def test_real_report_commit_with_matching_token_grants_then_revokes(self):
+        sheet, preflight = self._real_preflight()
+        status, _, commit, seen = self._run_real(
+            preflight, sheet, commit=True, confirm=batch_token(preflight))
+        self.assertEqual(status, 0)
+        commit.assert_called_once()
+        self.assertEqual(seen, [True])
+        self.assertFalse(grant_active())
+
+    def test_real_report_commit_refuses_a_token_for_a_different_plan(self):
+        _, reviewed = self._real_preflight("after")
+        sheet, drifted = self._real_preflight("something else")
+        with self.assertRaises(AssertionError):
+            self._run_real(drifted, sheet, commit=True, confirm=batch_token(reviewed))
+        self.assertFalse(grant_active())
+
     def test_blocked_batch_never_calls_commit_even_when_other_row_is_valid(self):
         sheet = sheet_for((EXPENSE_A, "after"), (EXPENSE_B, "also after"))
         push = PushPlan(
@@ -305,10 +359,35 @@ class MainBoundaryTests(unittest.TestCase):
         )
         return path
 
-    def test_real_report_commit_fails_before_creds_or_browser(self):
+    def test_confirmed_report_commit_without_token_fails_before_creds_or_browser(self):
         path = self._csv(REAL_REPORT)
         err = io.StringIO()
         argv = ["pushcsv", "--csv", str(path), "--commit"]
+        with (
+            patch.object(sys, "argv", argv),
+            patch("concurrer.pushcsv.resolve") as resolve_creds,
+            patch("concurrer.pushcsv.authenticated_context") as auth,
+            redirect_stderr(err),
+        ):
+            self.assertEqual(main(), 2)
+        resolve_creds.assert_not_called()
+        auth.assert_not_called()
+        self.assertIn("without --confirm", err.getvalue())
+
+    def test_confirmed_report_commit_passes_token_to_run_without_a_grant(self):
+        path = self._csv(REAL_REPORT)
+        argv = ["pushcsv", "--csv", str(path), "--commit", "--confirm", "abc123abc123"]
+        with patch.object(sys, "argv", argv), patch("concurrer.pushcsv._run", return_value=0) as run:
+            self.assertEqual(main(), 0)
+        # The grant is taken inside _run only after the live token matches.
+        self.assertFalse(grant_active())
+        self.assertEqual(run.call_args.kwargs["confirm"], "abc123abc123")
+        self.assertTrue(run.call_args.kwargs["commit"])
+
+    def test_other_real_report_commit_fails_before_creds_or_browser(self):
+        path = self._csv(OTHER_REPORT)
+        err = io.StringIO()
+        argv = ["pushcsv", "--csv", str(path), "--commit", "--confirm", "abc123abc123"]
         with (
             patch.object(sys, "argv", argv),
             patch("concurrer.pushcsv.resolve") as resolve_creds,

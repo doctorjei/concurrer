@@ -22,6 +22,36 @@ class SafetyTests(unittest.TestCase):
             safety.authorize_writes("DEADBEEF")
         self.assertFalse(safety.grant_active())
 
+    def test_confirmed_report_needs_matching_plan_tokens(self) -> None:
+        cced = safety.CCED_REPORT_ID
+        token = safety.plan_token(cced, [("E1", "comment", "a", "b")])
+        for reviewed, live in ((None, None), (None, token), (token, None),
+                               ("000000000000", token)):
+            with self.assertRaises(AssertionError):
+                safety.authorize_writes(cced, reviewed_token=reviewed, live_token=live)
+            self.assertFalse(safety.grant_active())
+        safety.authorize_writes(cced, reviewed_token=token, live_token=token)
+        url = f"https://us2.concursolutions.com/nui/expense/reports/{cced}/expenses/X"
+        self.assertTrue(safety.grant_covers(url))
+        self.assertFalse(safety.grant_covers(TEST_URL))
+        # The deny tier is untouched by a real-report grant.
+        with self.assertRaises(AssertionError):
+            safety.assert_safe("Submit Report", url=url)
+
+    def test_tokens_cannot_widen_the_grant_to_other_reports(self) -> None:
+        token = safety.plan_token("DEADBEEF", [])
+        with self.assertRaises(AssertionError):
+            safety.authorize_writes("DEADBEEF", reviewed_token=token, live_token=token)
+        self.assertFalse(safety.grant_active())
+
+    def test_plan_token_is_order_free_but_value_sensitive(self) -> None:
+        a, b = ("E1", "comment", "x", "y"), ("E2", "custom12", "", "Student Life")
+        token = safety.plan_token("R", [a, b])
+        self.assertEqual(token, safety.plan_token("R", [b, a]))
+        self.assertNotEqual(token, safety.plan_token("R", [a]))
+        self.assertNotEqual(token, safety.plan_token("R", [a, ("E2", "custom12", "", "Other")]))
+        self.assertNotEqual(token, safety.plan_token("S", [a, b]))
+
     def test_save_requires_test_grant_and_exact_live_url(self) -> None:
         with self.assertRaises(AssertionError):
             safety.assert_safe("Save Expense", "exp-save-expense", url=TEST_URL)

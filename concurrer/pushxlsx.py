@@ -10,7 +10,8 @@ Default mode is a fresh-live-state dry run::
 
     python -m concurrer.pushxlsx --xlsx CCED-Summer-2026.xlsx
 
-``--commit`` is structurally limited to the throwaway Test Report, exactly as
+``--commit`` is structurally limited to the throwaway Test Report and the one
+confirmed real report (which also needs ``--confirm <plan token>``), exactly as
 for CSV. The report ID is read from the workbook's Report Details sheet — never
 from a command-line option — and the grant is taken *before* credentials are
 resolved or a browser is opened, so a real-report workbook fails locally::
@@ -43,8 +44,7 @@ from pathlib import Path
 from .banners import parse_banner_actions
 from .csvio import single_report_id
 from .edit import PlanError
-from .pushcsv import BatchPlanError, _run
-from .safety import test_report_write_grant
+from .pushcsv import BatchPlanError, _run, run_commit
 from .xlsxio import RoutingError, push_sheet, workbook_issues
 
 
@@ -79,7 +79,13 @@ def main() -> int:
     ap.add_argument(
         "--commit",
         action="store_true",
-        help="persist only when the workbook identifies the throwaway Test Report",
+        help="persist only when the workbook identifies the Test Report or the "
+        "confirmed real report",
+    )
+    ap.add_argument(
+        "--confirm",
+        metavar="PLAN_TOKEN",
+        help="with --commit on a confirmed real report: the PLAN TOKEN its dry run printed",
     )
     ap.add_argument(
         "--banner-action",
@@ -93,14 +99,14 @@ def main() -> int:
     try:
         report_id, sheet = load(args.xlsx)
         banner_actions = parse_banner_actions(args.banner_action)
+        if args.confirm and not args.commit:
+            raise ValueError("--confirm is only meaningful with --commit")
         if args.commit:
             # The structural boundary must precede everything that can touch
             # credentials or a browser. The report ID was read from the file
             # itself, so no CLI argument can widen it.
-            with test_report_write_grant(report_id):
-                return _run(
-                    sheet, report_id, commit=True, banner_actions=banner_actions
-                )
+            return run_commit(sheet, report_id, confirm=args.confirm,
+                              banner_actions=banner_actions)
         return _run(sheet, report_id, commit=False, banner_actions=banner_actions)
     except (BatchPlanError, PlanError, RoutingError, ValueError,
             AssertionError) as exc:

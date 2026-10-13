@@ -26,6 +26,7 @@ from concurrer.xlsxio import (
 from test_xlsx_routing import REPORT, airfare, laundry, meal
 
 TEST_REPORT = "B857BA45DBC24EDB8420"
+OTHER_REPORT = "0123456789ABCDEF0123"
 
 
 def workbook(report_id, records):
@@ -121,19 +122,29 @@ class WriteBoundaryTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         write_workbook(self.path, workbook(REPORT, [airfare()]))
 
-    def run_commit(self):
-        return run_cli(["--xlsx", str(self.path), "--commit"])
+    def run_commit(self, *extra):
+        return run_cli(["--xlsx", str(self.path), "--commit", *extra])
 
-    def test_commit_on_real_report_refuses_before_credentials(self):
+    def test_confirmed_report_commit_without_token_refuses_before_credentials(self):
         code, text = self.run_commit()
         self.assertEqual(code, 2)
-        self.assertIn(TEST_REPORT, text)
         self.assertIn(REPORT, text)
+        self.assertIn("without --confirm", text)
         self.assertNotIn("credentials were resolved", text)
 
-    def test_boundary_message_names_the_only_writable_report(self):
-        _, text = self.run_commit()
+    def test_other_real_report_refuses_before_credentials_even_with_token(self):
+        write_workbook(self.path, workbook(OTHER_REPORT, [airfare()]))
+        code, text = self.run_commit("--confirm", "0123456789ab")
+        self.assertEqual(code, 2)
+        self.assertIn(TEST_REPORT, text)
         self.assertIn("only the throwaway test report", text)
+        self.assertNotIn("credentials were resolved", text)
+
+    def test_confirm_without_commit_is_refused(self):
+        code, text = run_cli(["--xlsx", str(self.path), "--confirm", "0123456789ab"])
+        self.assertEqual(code, 2)
+        self.assertIn("only meaningful with --commit", text)
+        self.assertNotIn("credentials were resolved", text)
 
 
 class SubmissionTests(unittest.TestCase):
