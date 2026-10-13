@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 
 from concurrer.csvio import ExpenseRecord, FieldCell
 from concurrer.type_form_map import TYPE_FORM_FIELDS
@@ -120,9 +121,10 @@ class XlsxTests(unittest.TestCase):
         comment = ws.cell(row=2, column=headers.index("Comment") + 1)
         self.assertTrue(date.protection.locked)
         self.assertFalse(comment.protection.locked)
-        # Blocked cells are black with red type.
+        # Blocked cells are black with bold white type (operator 2026-10-13).
         self.assertEqual(date.fill.fgColor.rgb, "00000000")
-        self.assertEqual(date.font.color.rgb, "00FF0000")
+        self.assertEqual(date.font.color.rgb, "00FFFFFF")
+        self.assertTrue(date.font.bold)
         # Type-specific cells stay editable: a type change can make them apply.
         days = ws.cell(row=2, column=headers.index("Days/Nights") + 1)
         self.assertFalse(days.protection.locked)
@@ -454,6 +456,10 @@ class XlsxTests(unittest.TestCase):
                for r in rng.rules if "Orig!" in r.formula[0]]
         self.assertTrue(dev)
         self.assertTrue(all("MATCH(" in f for f in dev))
+        # The row lookup must search Orig's Expense ID column, wherever the
+        # column order put it; a wrong column marks every locked cell red.
+        idl = get_column_letter(headers.index("Expense ID") + 1)
+        self.assertTrue(all(f"Orig!${idl}:${idl}" in f for f in dev))
 
     def test_customization_key_column_backs_required_lookup(self):
         write_workbook(self.path, data())

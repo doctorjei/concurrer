@@ -235,7 +235,7 @@ Type changes:
 | Invalid — value where prohibited, off-list, non-whole, or a blocked cell that changed | bright red |
 | Optional, filled or not | very light grey |
 | Field absent from this row's type | grey (red if it holds a value) |
-| Blocked by Concur | black background, red type |
+| Blocked by Concur | black background, bold white type |
 
 **Known limitations:** Travel Allowance / per diem is out of scope (the Meals
 sheet displays generated rows; it never creates, regenerates or edits them).

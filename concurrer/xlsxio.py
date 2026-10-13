@@ -84,7 +84,7 @@ DISPLAY = {
 SEARCH_FIELDS = frozenset({"location", "vendor", "travelRequestExpenseId"})
 
 FILL_BLOCKED = PatternFill("solid", fgColor="000000")
-FONT_BLOCKED = Font(color="FF0000")
+FONT_BLOCKED = Font(color="FFFFFF", bold=True)
 FILL_REQUIRED = PatternFill("solid", fgColor="F8D7DA")
 FILL_GOOD = PatternFill("solid", fgColor="C6EFCE")
 FILL_OPTIONAL = PatternFill("solid", fgColor="F2F2F2")
@@ -741,7 +741,7 @@ def build_workbook(data: WorkbookData) -> Workbook:
             req = (f'IFERROR(INDEX({cu}!$E:$E,MATCH(${type_letter}2&"|"&'
                    f'{letter}$1,{cu}!$G:$G,0))="Yes",FALSE)')
             ok = f'NOT({na})'
-            # Keep a live locked source value black/red-text. Type changes may
+            # Keep a live locked source value black/white-text. Type changes may
             # make it invalid (the N/A red above still wins), but otherwise a
             # Date/Currency/Payment Type card fact must not turn green merely
             # because the target type also requires it.
@@ -799,8 +799,11 @@ def build_workbook(data: WorkbookData) -> Workbook:
             if cell is None or not cell.locked:
                 continue
             letter = get_column_letter(ci)
+            # Orig mirrors the Expenses column layout, so the ID lives in
+            # the same column there; it is not column A.
             orig_val = (f'IFERROR(INDEX({ORIG}!$A:$ZZ,'
-                        f'MATCH(${id_letter}{r},{ORIG}!$A:$A,0),'
+                        f'MATCH(${id_letter}{r},'
+                        f'{ORIG}!${id_letter}:${id_letter},0),'
                         f'MATCH({letter}$1,{ORIG}!$1:$1,0)),"")')
             ws.conditional_formatting.add(
                 f"{letter}{r}",
