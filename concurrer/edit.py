@@ -159,6 +159,8 @@ def build_edit_plan(request: EditRequest, fields: list[dict]) -> EditPlan:
         current = by_name.get(name)
         if current and current["locked"]:
             raise PlanError(f"field {name!r} ({current['label']}) is locked")
+        if name in UNWRITABLE_FIELDS:
+            raise PlanError(f"field {name!r}: {UNWRITABLE_FIELDS[name]}")
         changes[name] = {
             "label": current["label"] if current else name,
             "before": current["value"] if current else "<appears after type change>",
@@ -203,6 +205,14 @@ def validate_target_schema(fields: list[dict], expense_type: str) -> None:
             f"live custom schema disagrees with map for {expense_type!r}; "
             f"missing={missing!r} unexpected={unexpected!r}"
         )
+
+
+#: Fields with no exact write helper yet. Refused at plan time so a dry run
+#: reports them, instead of a commit failing mid-row at fill time.
+UNWRITABLE_FIELDS = {
+    "travelRequestExpenseId": "the Request picker has no stable options trigger "
+    "and no exact-select write helper yet",
+}
 
 
 def validate_before_save(fields: list[dict], plan: EditPlan) -> None:

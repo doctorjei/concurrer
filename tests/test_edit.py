@@ -96,6 +96,16 @@ class EditPlanTests(unittest.TestCase):
                 with self.assertRaises(PlanError):
                     build_edit_plan(request, fields)
 
+    def test_request_picker_is_refused_at_plan_time(self) -> None:
+        # No exact-select helper exists for the triggerless Request picker; a
+        # dry run must report that rather than a commit failing mid-row.
+        fields = ground_transportation_fields()
+        fields.append(form_field("travelRequestExpenseId", "Request", ""))
+        request = EditRequest("TEST", "ABCDEF", None,
+                              {"travelRequestExpenseId": "05/04/2026, $800.00 - CCED"})
+        with self.assertRaisesRegex(PlanError, "Request picker"):
+            build_edit_plan(request, fields)
+
     def test_known_conditional_requirement_blocks_save(self) -> None:
         fields = ground_transportation_fields(comment="", custom20="Other (Comment Required)")
         request = EditRequest("TEST", "ABCDEF", None, {"custom20": "Other (Comment Required)"})
