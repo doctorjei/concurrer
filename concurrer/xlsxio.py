@@ -1184,6 +1184,17 @@ def route_merged(
     return next(iter(fields))
 
 
+def _headers_by_key(path: Path) -> dict[tuple[str, str], str]:
+    """``(field, meaning)`` -> Expenses header, from the Lists sheet."""
+    wb = load_workbook(path, read_only=True)
+    try:
+        return {(str(f or ""), str(m or "")): str(h)
+                for h, f, m in wb[LISTS].iter_rows(min_row=2, max_col=3, values_only=True)
+                if h is not None}
+    finally:
+        wb.close()
+
+
 def _original_values(path: Path) -> dict[str, dict[str, str]]:
     """Export-time values from the hidden Orig sheet, by expense and header."""
     wb = load_workbook(path, read_only=True)
@@ -1229,6 +1240,7 @@ def push_rows(
     report_id, values_by_id = read_workbook(path)
     routing = read_backend_routing(path)
     original = _original_values(path)
+    header_for = _headers_by_key(path)
     out: dict[str, dict[str, str]] = {}
     for expense_id, values in values_by_id.items():
         expense_type = str(values.get(TYPE_KEY) or "").strip()
@@ -1239,6 +1251,14 @@ def push_rows(
             # Blank means no change. Preserve the type key so a nonblank
             # merged cell can never evade the no-target-type refusal.
             if blank and (name, meaning) != TYPE_KEY:
+                continue
+            # Only an operator edit is pushed: a cell still equal to its
+            # export-time value is never written, even if live Concur has
+            # moved on. Otherwise a stale workbook would silently revert
+            # later changes (2026-10-14: a rebuilt workbook planned to undo
+            # 13 freshly written type changes).
+            exported = original.get(expense_id, {}).get(header_for.get((name, meaning), ""))
+            if not blank and exported is not None and str(value) == exported:
                 continue
             if name == MERGED_FIELD:
                 field_name = route_merged(routing, expense_type, meaning)

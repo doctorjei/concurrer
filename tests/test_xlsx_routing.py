@@ -100,8 +100,19 @@ class RoutingTests(unittest.TestCase):
         self.path = Path(self.tmp.name) / "r.xlsx"
         self.addCleanup(self.tmp.cleanup)
 
-    def write(self, records):
+    def write(self, records, *, as_edits=True):
+        """Write a workbook; by default treat every value as an operator edit.
+
+        Only cells that differ from the hidden Orig export are pushed, so the
+        routing tests below empty Orig's data rows to make each exported
+        value count as an edit.
+        """
         write_workbook(self.path, build(records))
+        if as_edits:
+            wb = load_workbook(self.path)
+            orig = wb["Orig"]
+            orig.delete_rows(2, orig.max_row)
+            wb.save(self.path)
         return self.path
 
     # -- the trap this whole layer exists for ---------------------------
@@ -166,7 +177,7 @@ class RoutingTests(unittest.TestCase):
     def _airfare_retyped(self, vendor=None):
         """Row 9 shape: Airfare -> Phone/Fax/Internet, whose blank form has
         no vendor field, so vendor has no route for the new type."""
-        self.write([airfare()])
+        self.write([airfare()], as_edits=False)
         wb = load_workbook(self.path)
         ws = wb[EXPENSES]
         headers = [c.value for c in ws[1]]
@@ -186,6 +197,20 @@ class RoutingTests(unittest.TestCase):
         self._airfare_retyped(vendor="Delta")
         with self.assertRaisesRegex(RoutingError, "does not apply"):
             push_rows(self.path)
+
+    def test_a_stale_unedited_value_is_never_pushed(self):
+        # Regression 2026-10-14: a workbook rebuilt from an old export planned
+        # to revert newer live changes. Unedited cells must push nothing.
+        self.write([airfare()], as_edits=False)
+        _, rows = push_rows(self.path)
+        self.assertEqual(rows["DDDD4444"], {})
+        wb = load_workbook(self.path)
+        ws = wb[EXPENSES]
+        headers = [c.value for c in ws[1]]
+        ws.cell(row=2, column=headers.index("Comment") + 1).value = "edited"
+        wb.save(self.path)
+        _, rows = push_rows(self.path)
+        self.assertEqual(rows["DDDD4444"], {"comment": "edited"})
 
     def test_ambiguous_routing_is_refused(self):
         routing = {("Airfare", "days/nights"): {"custom28", "custom24"}}
