@@ -93,8 +93,20 @@ This drives a live system with real money. Safety is structural, not advisory.
 - **FREE** — everything else (Edit, Details, View Alerts, row checkboxes).
 
 `authorize_writes(report_id)` **refuses any report other than the throwaway Test
-Report** (`B857BA45DBC24EDB8420`). The grant cannot widen into something
-dangerous; it only ever unlocks `save` on one report.
+Report** (`B857BA45DBC24EDB8420`) **and the one confirmed real report**
+(`safety.CONFIRMED_REPORT_IDS`: CCED Summer 2026). The confirmed report is
+granted only when the operator's `--confirm` token equals the token of the plan
+just rebuilt from live state (`safety.plan_token`): every dry run on it prints
+a **PLAN TOKEN**, a short fingerprint of every field it would write (and, for
+creates and receipts, every receipt byte). A commit can only apply the exact
+plan that was reviewed. The grant cannot widen into something dangerous; it
+only ever unlocks `save` (and field fills) on one report.
+
+**Type-change confirmations are never answered** (e.g. "attendee types ... will
+be removed"); the row stops before Save. The one exception is the opt-in
+`--accept-attendee-removal`, which matches exactly that prompt and is part of
+the plan token. **Workbooks push only cells changed from the export**, so a
+stale workbook can never revert newer live changes.
 
 Dangerous verbs match as **substrings**, and `data-nuiexp` is checked
 independently of the label. A whole-label guard is bypassable — `"Save and
@@ -132,9 +144,10 @@ only opens a menu. It passes only with **both**
 | `expexp.py` | Read-only full-report export (CSV **or** `.xlsx`) with re-read fidelity verification |
 | `probereport.py` | Read-only report-header + per-type option probe |
 | `pushcsv.py` | CSV dry-run / Test-Report-only batch driver over `edit.py`'s save path |
-| `pushxlsx.py` | Workbook dry-run / Test-Report-only batch driver; routes columns to fields by each row's expense type |
+| `pushxlsx.py` | Workbook dry-run / token-confirmed batch driver incl. Expense Type changes; `--rehearse` (unsaved in-form type switch per row), `--accept-attendee-removal` |
+| `create.py` | Create new expenses (with receipts) from a JSON plan; dry run prints a PLAN TOKEN; `--commit --confirm` |
 | `probereceipts.py` | Read-only receipt/upload surface probe |
-| `receipts.py` | Per-expense receipt attach; dry-run default, Test-Report-only `--commit` |
+| `receipts.py` | Per-expense receipt attach; dry run prints a file-bound token on the confirmed report; refuses duplicates |
 | `savebtn.py` | Dumps the Save split-button; `--menu` reads its variants |
 | `discover.py` | Read-only explorer; destructive labels blocked |
 | `mapform.py` / `mapedit.py` / `maptab.py` | Form mapping, read-only |
