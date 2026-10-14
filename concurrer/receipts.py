@@ -346,8 +346,15 @@ def attach_receipt(page, request: ReceiptRequest) -> dict:
     reopened_id = open_expense_by_id(
         page, request.report_id, request.expense_id
     )
-    post = snapshot_receipt_surface(page)
+    # The receipt viewer loads after the form on reopen (CCED JR Central,
+    # 2026-10-14: an immediate check missed a receipt that had persisted).
     post_check = check_receipt_visible(page, request.source.name)
+    for _ in range(30):  # x 1 s
+        if post_check.get("nameVisible"):
+            break
+        page.wait_for_timeout(1000)
+        post_check = check_receipt_visible(page, request.source.name)
+    post = snapshot_receipt_surface(page)
 
     if post_check.get("nameVisible"):
         outcome = "verified-persisted"
