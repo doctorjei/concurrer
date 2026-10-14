@@ -198,6 +198,18 @@ class TypeChangeBatchTests(unittest.TestCase):
         self.assertTrue(request.allow_type_change)
         self.assertEqual(dict(request.assignments), {"custom20": "Taxi"})
 
+    def test_acceptance_flows_to_requests_and_changes_the_token(self):
+        row = RowPlan(EXPENSE_A, changes=[
+            FieldChange("expenseType", "Ground Transportation", "Other Services - Non Employees")])
+        self.assertTrue(request_for(row, REAL_REPORT, accept_attendee_removal=True)
+                        .accept_attendee_removal)
+        self.assertFalse(request_for(row, REAL_REPORT).accept_attendee_removal)
+        sheet = sheet_for((EXPENSE_A, "x"))
+        plain = BatchPreflight(REAL_REPORT, sheet, PushPlan(row_plans=[row]))
+        accepted = BatchPreflight(REAL_REPORT, sheet, PushPlan(row_plans=[row]),
+                                  accept_attendee_removal=True)
+        self.assertNotEqual(batch_token(plain), batch_token(accepted))
+
     def test_dry_run_lists_type_changes_and_discards_and_token_covers_them(self):
         sheet = sheet_for((EXPENSE_A, "after"))
         rows = [RowPlan(EXPENSE_A, [FieldChange("expenseType", "Ground Transportation",

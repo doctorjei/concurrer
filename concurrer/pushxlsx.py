@@ -83,6 +83,12 @@ def main() -> int:
         "confirmed real report",
     )
     ap.add_argument(
+        "--accept-attendee-removal",
+        action="store_true",
+        help="on a type change, confirm Concur's 'attendee types ... will be "
+        "removed' prompt (only that exact prompt); included in the plan token",
+    )
+    ap.add_argument(
         "--rehearse",
         action="store_true",
         help="dry run only: switch each type-changing row's type in the form, "
@@ -115,9 +121,11 @@ def main() -> int:
             # credentials or a browser. The report ID was read from the file
             # itself, so no CLI argument can widen it.
             return run_commit(sheet, report_id, confirm=args.confirm,
-                              banner_actions=banner_actions)
+                              banner_actions=banner_actions,
+                              accept_attendee_removal=args.accept_attendee_removal)
         return _run(sheet, report_id, commit=False, banner_actions=banner_actions,
-                    rehearse=args.rehearse)
+                    rehearse=args.rehearse,
+                    accept_attendee_removal=args.accept_attendee_removal)
     except (BatchPlanError, PlanError, RoutingError, ValueError,
             AssertionError) as exc:
         print(f"pushxlsx plan error: {exc}", file=sys.stderr)

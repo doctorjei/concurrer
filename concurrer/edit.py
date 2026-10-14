@@ -52,6 +52,7 @@ from .widgets import (
     select_search_combobox_exact,
     settled_inventory,
     blocking_dialog_text,
+    continue_blocking_dialog,
 )
 
 _FIELD_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_]*\Z")
@@ -71,6 +72,21 @@ class TypeChangeConfirmation(ValueError):
         self.text = text
 
 
+ATTENDEE_REMOVAL = ("The following attendee types are not valid for this "
+                    "expense and will be removed.")
+
+
+def is_attendee_removal(text: str) -> bool:
+    """Exactly Concur's attendee-removal confirmation and nothing else.
+
+    Shape seen on CCED: Confirm / <sentence> / <attendee types...> /
+    Continue / Cancel. Any other dialog is never confirmed.
+    """
+    lines = [line.strip() for line in (text or "").splitlines() if line.strip()]
+    return (len(lines) >= 5 and lines[0] == "Confirm" and lines[1] == ATTENDEE_REMOVAL
+            and lines[-2:] == ["Continue", "Cancel"] and "---" not in lines)
+
+
 class PlanError(ValueError):
     """A request cannot be safely planned or persisted."""
 
@@ -85,6 +101,9 @@ class EditRequest:
     expected_type: str | None = None
     allow_type_change: bool = False
     save: bool = False
+    #: Operator-approved (2026-10-14): confirm Concur's attendee-removal
+    #: prompt during this type change. Covered by the batch plan token.
+    accept_attendee_removal: bool = False
 
 
 @dataclass
@@ -371,7 +390,13 @@ def apply_plan(page, plan: EditPlan, before: list[dict]) -> list[dict]:
     if plan.current_type != plan.target_type:
         type_field = field_by_name(before, "expenseType")
         select_combobox_exact(page, type_field, plan.target_type)
-        after_type = wait_for_type_cascade(page, plan.target_type)
+        try:
+            after_type = wait_for_type_cascade(page, plan.target_type)
+        except TypeChangeConfirmation as exc:
+            if not (plan.request.accept_attendee_removal and is_attendee_removal(exc.text)):
+                raise
+            continue_blocking_dialog(page)
+            after_type = wait_for_type_cascade(page, plan.target_type)
         if _type_from(after_type) != plan.target_type:
             raise PlanError(f"Expense Type did not change to {plan.target_type!r}")
         validate_target_schema(after_type, plan.target_type)

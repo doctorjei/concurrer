@@ -370,6 +370,23 @@ def cancel_blocking_dialog(page) -> None:
     page.wait_for_timeout(1000)
 
 
+def continue_blocking_dialog(page) -> None:
+    """Click the single Continue of the visible blocking modal.
+
+    Only callers holding an explicit, token-covered operator acceptance for
+    this exact prompt may use it (``edit.is_attendee_removal``).
+    """
+    dialogs = page.locator(CONFIRM_DIALOGS)
+    visible = [dialogs.nth(i) for i in range(dialogs.count()) if dialogs.nth(i).is_visible()]
+    if len(visible) != 1:
+        raise RuntimeError(f"refusing to confirm an ambiguous dialog state ({len(visible)})")
+    button = visible[0].get_by_role("button", name="Continue")
+    if button.count() != 1:
+        raise RuntimeError("blocking dialog has no single Continue control")
+    click_safe(page, button, "Continue")
+    page.wait_for_timeout(1000)
+
+
 def select_payment_type_exact(page, field: dict, requested: str) -> str:
     """Select Payment Type from its container-opened option list.
 

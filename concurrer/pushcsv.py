@@ -57,6 +57,7 @@ from .edit import (
     PlanError,
     TypeChangeConfirmation,
     build_edit_plan,
+    is_attendee_removal,
     persist_and_verify_plan,
     wait_for_type_cascade,
 )
@@ -92,6 +93,8 @@ class BatchPreflight:
     edit_plans: dict[str, EditPlan] = field(default_factory=dict)
     inventory_failures: dict[str, str] = field(default_factory=dict)
     edit_failures: dict[str, str] = field(default_factory=dict)
+    #: Operator acceptance of Concur's attendee-removal prompt (token-covered).
+    accept_attendee_removal: bool = False
     #: Expense key -> what an unsaved in-form type switch actually showed.
     rehearsals: dict[str, "Rehearsal"] = field(default_factory=dict)
 
@@ -133,7 +136,8 @@ def _row_for_id(sheet: Sheet, expense_id: str) -> Mapping[str, str]:
     return rows[0]
 
 
-def request_for(row_plan: RowPlan, report_id: str) -> EditRequest:
+def request_for(row_plan: RowPlan, report_id: str, *,
+                accept_attendee_removal: bool = False) -> EditRequest:
     """Turn a CSV field diff into the existing single-expense request object."""
     if row_plan.errors or not row_plan.changes:
         raise BatchPlanError(
@@ -168,6 +172,7 @@ def request_for(row_plan: RowPlan, report_id: str) -> EditRequest:
         expected_type=type_change.before,
         allow_type_change=True,
         save=True,
+        accept_attendee_removal=accept_attendee_removal,
     )
 
 
@@ -225,7 +230,8 @@ def _live_inventories(page, sheet: Sheet, report_id: str) -> tuple[dict[str, lis
     return inventories, failures
 
 
-def preflight_batch(page, sheet: Sheet, report_id: str) -> BatchPreflight:
+def preflight_batch(page, sheet: Sheet, report_id: str, *,
+                    accept_attendee_removal: bool = False) -> BatchPreflight:
     """Read fresh state and build every reviewable plan without writing."""
     live_by_id, inventory_failures = _live_inventories(page, sheet, report_id)
     push = plan_push(sheet, live_by_id)
@@ -234,13 +240,15 @@ def preflight_batch(page, sheet: Sheet, report_id: str) -> BatchPreflight:
         sheet=sheet,
         push=push,
         inventory_failures=inventory_failures,
+        accept_attendee_removal=accept_attendee_removal,
     )
     for row_plan in push.actionable:
         try:
             row = _row_for_id(sheet, row_plan.expense_id)
             fields = live_by_id[_id_key(row_plan.expense_id)]
             preflight.edit_plans[_id_key(row_plan.expense_id)] = build_edit_plan(
-                request_for(row_plan, report_id), fields
+                request_for(row_plan, report_id,
+                            accept_attendee_removal=accept_attendee_removal), fields
             )
         except Exception as exc:  # noqa: BLE001 - planner failure belongs in review
             preflight.edit_failures[row_plan.expense_id] = f"{type(exc).__name__}: {exc}"
@@ -324,7 +332,8 @@ def rehearse_type_changes(page, preflight: BatchPreflight) -> None:
             preflight.edit_failures[key] = f"rehearsal failed: {type(exc).__name__}: {exc}"
             continue
         preflight.rehearsals[key] = rehearsal
-        if rehearsal.confirmation:
+        if rehearsal.confirmation and not (
+                preflight.accept_attendee_removal and is_attendee_removal(rehearsal.confirmation)):
             preflight.edit_failures[key] = (
                 f"rehearsal: Concur demands confirmation for {plan.target_type!r} "
                 f"and would remove data: {rehearsal.confirmation!r}")
@@ -350,8 +359,11 @@ def format_preflight(preflight: BatchPreflight) -> str:
             type_lines.append("      discards no nonblank custom value")
         rehearsal = preflight.rehearsals.get(expense_id)
         if rehearsal is not None and rehearsal.confirmation:
+            accepted = (preflight.accept_attendee_removal
+                        and is_attendee_removal(rehearsal.confirmation))
             type_lines.append(
-                "      WILL REMOVE (Concur confirmation, rehearsed; batch blocked): "
+                "      WILL REMOVE (Concur confirmation, rehearsed; "
+                + ("ACCEPTED by --accept-attendee-removal): " if accepted else "batch blocked): ")
                 + " / ".join(rehearsal.confirmation.split("\n")))
             continue
         if rehearsal is not None:
@@ -407,7 +419,9 @@ def _replan_for_write(page, preflight: BatchPreflight, original: RowPlan) -> tup
             f"to replace reviewed changes {_change_signature(original.changes)!r} "
             f"with {_change_signature(fresh.changes)!r}"
         )
-    return build_edit_plan(request_for(fresh, preflight.report_id), fields), fields
+    return build_edit_plan(request_for(
+        fresh, preflight.report_id,
+        accept_attendee_removal=preflight.accept_attendee_removal), fields), fields
 
 
 def commit_batch(page, preflight: BatchPreflight) -> int:
@@ -487,7 +501,9 @@ def batch_token(preflight: BatchPreflight) -> str:
         for kind, attr in (("discard", "losses"), ("maybe", "possible_losses"))
         for loss in getattr(plan, attr, ())
     ]
-    return plan_token(preflight.report_id, changes + losses)
+    accepted = ([("*", "accept", "attendee-removal", "")]
+                if preflight.accept_attendee_removal else [])
+    return plan_token(preflight.report_id, changes + losses + accepted)
 
 
 def _run(
@@ -498,6 +514,7 @@ def _run(
     banner_actions: Mapping[str, str],
     confirm: str | None = None,
     rehearse: bool = False,
+    accept_attendee_removal: bool = False,
 ) -> int:
     """Authenticate once, preflight all rows, then optionally commit."""
     if rehearse and commit:
@@ -509,7 +526,11 @@ def _run(
         ufl_password=creds.ufl_password,
         banner_actions=banner_actions,
     ) as page:
-        preflight = preflight_batch(page, sheet, report_id)
+        preflight = preflight_batch(page, sheet, report_id,
+                                    accept_attendee_removal=accept_attendee_removal)
+        if accept_attendee_removal:
+            print("\n  ACCEPTING Concur's attendee-removal prompt on type changes "
+                  "(--accept-attendee-removal; part of the plan token)")
         if rehearse:
             rehearse_type_changes(page, preflight)
         print(format_preflight(preflight))
@@ -542,6 +563,7 @@ def run_commit(
     *,
     confirm: str | None,
     banner_actions: Mapping[str, str],
+    accept_attendee_removal: bool = False,
 ) -> int:
     """CLI ``--commit`` entry shared by the CSV and xlsx drivers.
 
@@ -556,13 +578,15 @@ def run_commit(
                 "--confirm <plan token>; run the dry run first and review its plan"
             )
         return _run(sheet, report_id, commit=True, confirm=confirm,
-                    banner_actions=banner_actions)
+                    banner_actions=banner_actions,
+                    accept_attendee_removal=accept_attendee_removal)
     # The grant refuses any other real report first, so its boundary message
     # wins over the --confirm misuse below.
     with test_report_write_grant(report_id):
         if confirm:
             raise ValueError("--confirm applies only to a confirmed real report")
-        return _run(sheet, report_id, commit=True, banner_actions=banner_actions)
+        return _run(sheet, report_id, commit=True, banner_actions=banner_actions,
+                    accept_attendee_removal=accept_attendee_removal)
 
 
 def main() -> int:

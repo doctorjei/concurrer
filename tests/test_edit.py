@@ -16,6 +16,7 @@ from concurrer.edit import (
     apply_plan,
     wait_for_type_cascade,
     TypeChangeConfirmation,
+    is_attendee_removal,
 )
 
 
@@ -164,6 +165,62 @@ class EditPlanTests(unittest.TestCase):
         self.assertIn("attendee types", caught.exception.text)
         self.assertIn("nothing was saved", str(caught.exception))
         inventory.assert_not_called()
+
+    ATTENDEE_PROMPT = ("Confirm\nThe following attendee types are not valid for this "
+                       "expense and will be removed.\nEmployee\nContinue\nCancel")
+
+    def test_only_the_exact_attendee_prompt_is_recognised(self) -> None:
+        self.assertTrue(is_attendee_removal(self.ATTENDEE_PROMPT))
+        for other in (
+            "Confirm\nDelete this expense?\nContinue\nCancel",
+            self.ATTENDEE_PROMPT.replace("removed.", "removed. Also receipts."),
+            self.ATTENDEE_PROMPT + "\n---\nSecond dialog",
+            "Confirm\nThe following attendee types are not valid for this expense "
+            "and will be removed.\nContinue\nCancel",   # no attendee listed
+        ):
+            with self.subTest(other=other):
+                self.assertFalse(is_attendee_removal(other))
+
+    def _gt_to_books(self, accept: bool):
+        request = EditRequest("TEST", "ABCDEF", None, {},
+                              target_type="Books & Publications",
+                              expected_type="Ground Transportation",
+                              allow_type_change=True, accept_attendee_removal=accept)
+        return build_edit_plan(request, ground_transportation_fields())
+
+    def test_attendee_prompt_is_continued_only_when_accepted(self) -> None:
+        rendered = [form_field("expenseType", "Expense Type", "Books & Publications")]
+        for accept in (True, False):
+            with self.subTest(accept=accept):
+                plan = self._gt_to_books(accept)
+                with (
+                    patch("concurrer.edit.select_combobox_exact"),
+                    patch("concurrer.edit.wait_for_type_cascade",
+                          side_effect=[TypeChangeConfirmation(self.ATTENDEE_PROMPT), rendered]),
+                    patch("concurrer.edit.continue_blocking_dialog") as cont,
+                    patch("concurrer.edit.validate_target_schema"),
+                    patch("concurrer.edit._restore_compatible_customs"),
+                    patch("concurrer.edit.field_inventory", return_value=rendered),
+                ):
+                    if accept:
+                        apply_plan(object(), plan, ground_transportation_fields())
+                        cont.assert_called_once()
+                    else:
+                        with self.assertRaises(TypeChangeConfirmation):
+                            apply_plan(object(), plan, ground_transportation_fields())
+                        cont.assert_not_called()
+
+    def test_acceptance_never_continues_a_different_prompt(self) -> None:
+        plan = self._gt_to_books(True)
+        with (
+            patch("concurrer.edit.select_combobox_exact"),
+            patch("concurrer.edit.wait_for_type_cascade",
+                  side_effect=TypeChangeConfirmation("Confirm\nDelete receipts?\nContinue\nCancel")),
+            patch("concurrer.edit.continue_blocking_dialog") as cont,
+        ):
+            with self.assertRaises(TypeChangeConfirmation):
+                apply_plan(object(), plan, ground_transportation_fields())
+        cont.assert_not_called()
 
     def test_type_change_requires_matching_expectation_and_acknowledgement(self) -> None:
         fields = ground_transportation_fields()
