@@ -13,6 +13,7 @@ from concurrer.edit import (
     persist_and_verify_plan,
     validate_before_save,
     _apply_value,
+    apply_plan,
 )
 
 
@@ -70,6 +71,55 @@ class EditPlanTests(unittest.TestCase):
         plan = build_edit_plan(request, ground_transportation_fields())
         self.assertEqual(plan.target_type, "Books & Publications")
         self.assertEqual({loss["name"] for loss in plan.losses}, {"custom20", "custom29"})
+
+    def _undefined_fields(self) -> list[dict]:
+        return [
+            form_field("expenseType", "Expense Type", "Undefined", required=True),
+            form_field("location", "City of Purchase", "Osaka, JAPAN"),
+            form_field("comment", "Comment", "", widget="textarea/text"),
+        ]
+
+    def _undefined_to_gt(self, assignments) -> EditRequest:
+        return EditRequest("TEST", "ABCDEF", None, assignments,
+                           target_type="Ground Transportation",
+                           expected_type="Undefined", allow_type_change=True)
+
+    def test_custom_free_unmapped_source_can_change_type(self) -> None:
+        # "Undefined" is not a selectable type, so it is not in the map; with
+        # no custom fields there is nothing type-specific to lose.
+        plan = build_edit_plan(self._undefined_to_gt({
+            "custom20": "Taxi",
+            "travelRequestExpenseId": "05/04/2026, $800.00 - CCED",
+        }), self._undefined_fields())
+        self.assertEqual(plan.losses, [])
+        self.assertEqual(plan.changes["travelRequestExpenseId"]["before"],
+                         "<appears after type change>")
+
+    def test_standard_values_missing_from_target_form_are_reported(self) -> None:
+        plan = build_edit_plan(self._undefined_to_gt({"custom20": "Taxi"}),
+                               self._undefined_fields())
+        # The blank Ground Transportation form has no Location.
+        self.assertEqual([(l["name"], l["value"]) for l in plan.possible_losses],
+                         [("location", "Osaka, JAPAN")])
+
+    def test_unmapped_source_with_custom_fields_is_refused(self) -> None:
+        fields = self._undefined_fields() + [form_field("custom7", "Mystery", "x")]
+        with self.assertRaisesRegex(PlanError, "not in the 67-type map"):
+            build_edit_plan(self._undefined_to_gt({"custom20": "Taxi"}), fields)
+
+    def test_deferred_field_missing_after_type_switch_stops_before_save(self) -> None:
+        plan = build_edit_plan(self._undefined_to_gt({
+            "travelRequestExpenseId": "05/04/2026, $800.00 - CCED"}), self._undefined_fields())
+        after_switch = ground_transportation_fields()  # no Request on this form
+        with (
+            patch("concurrer.edit.select_combobox_exact"),
+            patch("concurrer.edit.field_inventory", return_value=after_switch),
+            patch("concurrer.edit.validate_target_schema"),
+            patch("concurrer.edit._apply_value") as apply_value,
+        ):
+            with self.assertRaisesRegex(PlanError, "nothing was saved"):
+                apply_plan(object(), plan, self._undefined_fields())
+        apply_value.assert_not_called()
 
     def test_type_change_requires_matching_expectation_and_acknowledgement(self) -> None:
         fields = ground_transportation_fields()

@@ -35,6 +35,7 @@ from .login import authenticated_context
 from .nav import open_expense_by_id, open_expense_edit, open_report
 from .safety import TEST_REPORT_ID, click_safe, test_report_write_grant
 from .secrets import resolve
+from .type_form_map import TYPE_FORM_FIELDS
 from .type_map import (
     conditional_errors,
     compatible_custom_field,
@@ -78,6 +79,10 @@ class EditPlan:
     changes: dict[str, dict[str, str]]
     losses: list[dict] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    #: Standard fields with a value that the target type's blank (manual) form
+    #: lacks. Unverified: card-fed forms can differ, so these are reported for
+    #: review, not refused.
+    possible_losses: list[dict] = field(default_factory=list)
 
 
 def _norm(text: str) -> str:
@@ -138,8 +143,18 @@ def build_edit_plan(request: EditRequest, fields: list[dict]) -> EditPlan:
             raise PlanError(
                 f"expected type {request.expected_type!r}, live type is {current_type!r}"
             )
-        if not known_type(current_type) or not known_type(target_type):
-            raise PlanError("source and target types must exist in the 67-type map")
+        if not known_type(target_type):
+            raise PlanError("target type must exist in the 67-type map")
+        # Concur's "Undefined" placeholder is not a selectable type, so it is
+        # not in the map. A source outside the map is safe only when its live
+        # form has no custom fields: then nothing type-specific can be lost
+        # or needs restoring.
+        if not known_type(current_type) and any(
+                field["name"].startswith("custom") for field in fields):
+            raise PlanError(
+                f"source type {current_type!r} is not in the 67-type map and "
+                "carries custom fields; refusing an unmapped loss"
+            )
     elif request.expected_type or request.allow_type_change:
         raise PlanError("--expect-type and --allow-type-change require --type")
 
@@ -154,7 +169,12 @@ def build_edit_plan(request: EditRequest, fields: list[dict]) -> EditPlan:
     by_name = {field["name"]: field for field in fields if field["name"]}
     changes: dict[str, dict[str, str]] = {}
     for name, value in request.assignments.items():
-        if name not in allowed_names:
+        # A standard field may exist only on the target type (Request appears
+        # on Ground Transportation but not on Undefined). Customs are known
+        # exhaustively from the schema; a standard field is accepted here and
+        # must appear on the form after the type switch, before any Save.
+        deferred = type_changing and not name.startswith("custom") and name not in by_name
+        if name not in allowed_names and not deferred:
             raise PlanError(f"field {name!r} is absent from the live/target form")
         current = by_name.get(name)
         if current and current["locked"]:
@@ -167,7 +187,8 @@ def build_edit_plan(request: EditRequest, fields: list[dict]) -> EditPlan:
             "after": value,
         }
 
-    losses = type_change_losses(current_type, fields, target_type) if type_changing else []
+    losses = (type_change_losses(current_type, fields, target_type)
+              if type_changing and known_type(current_type) else [])
     warnings: list[str] = []
     if type_changing:
         warnings.append(
@@ -176,7 +197,27 @@ def build_edit_plan(request: EditRequest, fields: list[dict]) -> EditPlan:
         )
         if losses:
             warnings.append(f"{len(losses)} nonblank custom value(s) cannot safely carry over.")
-    return EditPlan(request, current_type, target_type, changes, losses, warnings)
+    possible = (_possible_standard_losses(fields, target_type, request.assignments)
+                if type_changing else [])
+    return EditPlan(request, current_type, target_type, changes, losses, warnings,
+                    possible)
+
+
+#: Standard fields whose presence follows currency, not expense type.
+_CURRENCY_FIELDS = frozenset({"exchangeRate", "postedAmount"})
+
+
+def _possible_standard_losses(fields: list[dict], target_type: str,
+                              assignments) -> list[dict]:
+    target = {f.name for f in TYPE_FORM_FIELDS.get(target_type, ())}
+    return [
+        {"name": f["name"], "label": f["label"], "value": f["value"]}
+        for f in fields
+        if f["name"] and not f["name"].startswith("custom")
+        and f["name"] not in target and f["name"] not in _CURRENCY_FIELDS
+        and f["name"] not in assignments
+        and str(f.get("value", "")).strip()
+    ]
 
 
 def _live_custom_schema(fields: list[dict]) -> set[tuple[str, str, bool]]:
@@ -262,6 +303,8 @@ def _apply_value(page, field: dict, value: str) -> None:
 
 def _restore_compatible_customs(page, source_type: str, target_type: str, before: list[dict]) -> None:
     """Restore only same-slot, same-label values erased by a type cascade."""
+    if not known_type(source_type):
+        return  # planning proved such a source had no custom fields
     after = field_inventory(page)
     for source in before:
         if not source["name"].startswith("custom") or not source["value"].strip():
@@ -292,6 +335,11 @@ def apply_plan(page, plan: EditPlan, before: list[dict]) -> list[dict]:
 
     current = field_inventory(page)
     for name, change in plan.changes.items():
+        if not any(field["name"] == name for field in current):
+            raise PlanError(
+                f"field {name!r} is not on the {plan.target_type!r} form after the "
+                "type change; nothing was saved"
+            )
         _apply_value(page, field_by_name(current, name), change["after"])
         current = field_inventory(page)
     return current

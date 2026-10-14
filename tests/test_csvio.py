@@ -20,6 +20,7 @@ from concurrer.csvio import (
     REPORT_ID_COLUMN,
     CsvError,
     ExpenseRecord,
+    Sheet,
     expense_cells,
     plan_push,
     read_expenses,
@@ -281,6 +282,49 @@ class RefusalTests(unittest.TestCase):
         self.assertEqual(push.actionable, [])
         self.assertTrue(push.blocked)
         self.assertIn("bulk type changes are refused", push.blocked[0].errors[0])
+
+    def _undefined_live(self):
+        return [
+            {"label": "Expense Type", "name": "expenseType", "value": "Undefined",
+             "required": True, "locked": False, "widget": "combobox"},
+            {"label": "Comment", "name": "comment", "value": "", "required": False,
+             "locked": False, "widget": "textarea/textarea"},
+        ]
+
+    def _type_sheet(self, allow=True, **values):
+        columns = tuple(values)
+        return Sheet(field_columns=columns,
+                     rows=({EXPENSE_ID_COLUMN: EXPENSE_ID, REPORT_ID_COLUMN: TEST_REPORT,
+                            **values},),
+                     allow_type_changes=allow)
+
+    def test_gated_sheet_carries_a_type_change_and_target_only_fields(self):
+        # Undefined -> Ground Transportation: Variant (custom20) and Request
+        # exist only on the target form, so they plan as '' -> value.
+        sheet = self._type_sheet(expenseType="Ground Transportation", custom20="Taxi",
+                                 travelRequestExpenseId="05/04/2026, $800.00 - CCED")
+        push = plan_push(sheet, {EXPENSE_ID: self._undefined_live()})
+        self.assertFalse(push.has_errors, push.blocked and push.blocked[0].errors)
+        changes = {c.name: (c.before, c.after) for c in push.actionable[0].changes}
+        self.assertEqual(changes["expenseType"], ("Undefined", "Ground Transportation"))
+        self.assertEqual(changes["custom20"], ("", "Taxi"))
+        self.assertEqual(changes["travelRequestExpenseId"][0], "")
+
+    def test_gated_type_change_refuses_a_custom_the_target_lacks(self):
+        sheet = self._type_sheet(expenseType="Phone/Fax/Internet", custom20="Taxi")
+        push = plan_push(sheet, {EXPENSE_ID: self._undefined_live()})
+        self.assertTrue(push.has_errors)
+        self.assertIn("not a field on target type", push.blocked[0].errors[0])
+
+    def test_ungated_sheet_still_refuses_type_changes(self):
+        sheet = self._type_sheet(allow=False, expenseType="Ground Transportation")
+        push = plan_push(sheet, {EXPENSE_ID: self._undefined_live()})
+        self.assertIn("bulk type changes are refused", push.blocked[0].errors[0])
+
+    def test_absent_field_without_a_type_change_is_still_an_error(self):
+        sheet = self._type_sheet(expenseType="Undefined", custom20="Taxi")
+        push = plan_push(sheet, {EXPENSE_ID: self._undefined_live()})
+        self.assertIn("not a field on this expense's live form", push.blocked[0].errors[0])
 
     def test_unchanged_expense_type_is_not_an_error(self):
         # Regression: the bulk refusal once fired on a non-blank expenseType

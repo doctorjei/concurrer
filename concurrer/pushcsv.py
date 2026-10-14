@@ -45,6 +45,7 @@ from .csvio import (
     PushPlan,
     RowPlan,
     Sheet,
+    TYPE_FIELD,
     format_plan,
     plan_push,
     read_expenses,
@@ -134,11 +135,28 @@ def request_for(row_plan: RowPlan, report_id: str) -> EditRequest:
         raise BatchPlanError(
             f"expense {row_plan.expense_id}: duplicate field changes in row plan"
         )
+    type_change = next(
+        (change for change in row_plan.changes if change.name == TYPE_FIELD), None)
+    if type_change is None:
+        return EditRequest(
+            report_id=report_id,
+            expense_id=row_plan.expense_id,
+            row=None,
+            assignments=assignments,
+            save=True,
+        )
+    # Same single-expense type-change path as ``edit --type``: the live type
+    # must still be the reviewed "before", and the change is acknowledged
+    # explicitly. Type first, then the target type's fields.
+    del assignments[TYPE_FIELD]
     return EditRequest(
         report_id=report_id,
         expense_id=row_plan.expense_id,
         row=None,
         assignments=assignments,
+        target_type=type_change.after,
+        expected_type=type_change.before,
+        allow_type_change=True,
         save=True,
     )
 
@@ -155,7 +173,8 @@ def _one_row_plan(
     fields: list[dict],
 ) -> RowPlan:
     """Freshly diff one source row against the just-opened live form."""
-    single = Sheet(field_columns=sheet.field_columns, rows=(row,))
+    single = Sheet(field_columns=sheet.field_columns, rows=(row,),
+                   allow_type_changes=sheet.allow_type_changes)
     refreshed = plan_push(single, {expense_id: fields})
     if refreshed.unknown_ids or refreshed.duplicate_ids:
         raise BatchPlanError(
@@ -221,6 +240,24 @@ def preflight_batch(page, sheet: Sheet, report_id: str) -> BatchPreflight:
 def format_preflight(preflight: BatchPreflight) -> str:
     """Append browser/editor diagnostics to csvio's complete plan output."""
     parts = [format_plan(preflight.push)]
+    type_lines = []
+    for expense_id, plan in preflight.edit_plans.items():
+        if getattr(plan, "current_type", None) == getattr(plan, "target_type", None):
+            continue
+        type_lines.append(
+            f"    expense {expense_id}: {plan.current_type!r} -> {plan.target_type!r}")
+        for loss in plan.losses:
+            type_lines.append(
+                f"      DISCARDS {loss['label']} ({loss['name']}) = {loss['value']!r}")
+        if not plan.losses:
+            type_lines.append("      discards no nonblank custom value")
+        for loss in getattr(plan, "possible_losses", ()):
+            type_lines.append(
+                f"      MAY DISCARD {loss['label']} ({loss['name']}) = {loss['value']!r}"
+                f"  [not on the blank {plan.target_type!r} form; unverified]")
+    if type_lines:
+        parts.append("\n  TYPE CHANGES (type is set first; Concur then drops "
+                     "fields the new type lacks):\n" + "\n".join(type_lines))
     if preflight.inventory_failures:
         lines = ["\n  LIVE READ FAILURES — no mutation is allowed:"]
         for expense_id, why in preflight.inventory_failures.items():
@@ -324,11 +361,20 @@ def commit_batch(page, preflight: BatchPreflight) -> int:
 
 def batch_token(preflight: BatchPreflight) -> str:
     """The reviewable fingerprint of exactly what this batch would write."""
-    return plan_token(preflight.report_id, [
+    changes = [
         (_id_key(row_plan.expense_id), change.name, change.before, change.after)
         for row_plan in preflight.actionable
         for change in row_plan.changes
-    ])
+    ]
+    # Discarded values are part of what the operator approves: a token for a
+    # type change must not survive a live value that would now be lost.
+    losses = [
+        (expense_id, f"{kind}:{loss['name']}", loss["value"], "")
+        for expense_id, plan in preflight.edit_plans.items()
+        for kind, attr in (("discard", "losses"), ("maybe", "possible_losses"))
+        for loss in getattr(plan, attr, ())
+    ]
+    return plan_token(preflight.report_id, changes + losses)
 
 
 def _run(

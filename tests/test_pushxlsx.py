@@ -79,6 +79,8 @@ class PushXlsxLoadTests(unittest.TestCase):
         report_id, sheet = pushxlsx.load(self.path)
         self.assertEqual(report_id, TEST_REPORT)
         self.assertEqual(sheet.expense_ids, ("DDDD4444",))
+        # Only the gated workbook reader may carry Expense Type changes.
+        self.assertTrue(sheet.allow_type_changes)
 
     def test_red_or_edited_pink_cell_aborts_before_sheet_routing(self):
         self.write(TEST_REPORT, [airfare()])

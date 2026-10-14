@@ -1258,7 +1258,11 @@ def push_sheet(path: Path):
         }
         for expense_id, row in rows_by_id.items()
     )
-    return report_id, csvio.Sheet(field_columns=tuple(field_columns), rows=rows)
+    # The red/pink gate (``workbook_issues``) has already made every type-
+    # change loss an explicit operator-cleared cell, so this reader alone may
+    # carry Expense Type changes.
+    return report_id, csvio.Sheet(field_columns=tuple(field_columns), rows=rows,
+                                  allow_type_changes=True)
 
 
 

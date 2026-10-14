@@ -48,8 +48,11 @@ IDENTITY_COLUMNS = (EXPENSE_ID_COLUMN, REPORT_ID_COLUMN)
 #: form reports them unlocked. ``expenseType`` changes silently discard
 #: type-specific custom values, which is far too destructive to do in bulk on
 #: the strength of a spreadsheet cell; it stays a one-at-a-time ``edit.py``
-#: operation where the loss report is read directly.
+#: operation where the loss report is read directly. The xlsx path is the one
+#: exception (``Sheet.allow_type_changes``): its whole-sheet red/pink gate makes
+#: every loss an explicit, operator-cleared cell before a batch may run.
 BULK_REFUSED_FIELDS = ("expenseType",)
+TYPE_FIELD = "expenseType"
 
 
 class CsvError(ValueError):
@@ -207,6 +210,8 @@ class Sheet:
 
     field_columns: tuple[str, ...]
     rows: tuple[Mapping[str, str], ...]
+    #: Set only by the gated xlsx reader; CSV keeps refusing type changes.
+    allow_type_changes: bool = False
 
     @property
     def expense_ids(self) -> tuple[str, ...]:
@@ -334,10 +339,21 @@ class PushPlan:
         )
 
 
+def _target_type(row: Mapping[str, str], cells: Mapping[str, Any]) -> str | None:
+    """The row's new Expense Type, or ``None`` when it does not change."""
+    raw = str(row.get(TYPE_FIELD) or "").strip()
+    live = cells.get(TYPE_FIELD)
+    if not raw or live is None or _norm(live.value) == _norm(raw):
+        return None
+    return raw
+
+
 def plan_row(
     row: Mapping[str, str],
     live_fields: Sequence[Mapping[str, Any]] | None,
     field_columns: Sequence[str],
+    *,
+    allow_type_changes: bool = False,
 ) -> RowPlan:
     """Diff one CSV row against one expense's fresh live field inventory.
 
@@ -351,6 +367,7 @@ def plan_row(
         return plan
 
     cells = {cell.name: cell for cell in expense_cells(live_fields)}
+    target_type = _target_type(row, cells) if allow_type_changes else None
 
     for column in field_columns:
         raw = row.get(column)
@@ -360,6 +377,21 @@ def plan_row(
         if not str(raw).strip():
             continue
         if column not in cells:
+            if target_type is not None:
+                # The field may appear only after the type cascade. Customs
+                # are checked against the exhaustive 67-type schema now;
+                # standard fields are verified on the form after the switch,
+                # before any Save.
+                from .type_map import field_for, known_type
+
+                if column.startswith("custom") and not (
+                        known_type(target_type) and field_for(target_type, column)):
+                    plan.errors.append(
+                        f"{column}: not a field on target type {target_type!r}"
+                    )
+                    continue
+                plan.changes.append(FieldChange(name=column, before="", after=str(raw)))
+                continue
             plan.errors.append(
                 f"{column}: not a field on this expense's live form"
             )
@@ -374,7 +406,8 @@ def plan_row(
         # is worth refusing.
         if _norm(before) == _norm(after):
             continue
-        if column in BULK_REFUSED_FIELDS:
+        if column in BULK_REFUSED_FIELDS and not (
+                column == TYPE_FIELD and target_type is not None):
             plan.errors.append(
                 f"{column}: bulk type changes are refused; change Expense Type "
                 "one at a time with `python -m concurrer.edit` so the value-loss "
@@ -421,7 +454,9 @@ def plan_push(
         if fields is None:
             push.unknown_ids.append(expense_id)
             continue
-        push.row_plans.append(plan_row(row, fields, sheet.field_columns))
+        push.row_plans.append(plan_row(
+            row, fields, sheet.field_columns,
+            allow_type_changes=sheet.allow_type_changes))
     return push
 
 

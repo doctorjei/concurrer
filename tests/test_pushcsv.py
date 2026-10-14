@@ -24,6 +24,7 @@ from concurrer.pushcsv import (
     _run,
     batch_token,
     commit_batch,
+    format_preflight,
     main,
     preflight_batch,
     request_for,
@@ -180,6 +181,35 @@ class PreflightTests(unittest.TestCase):
         self.assertFalse(preflight.clean)
         self.assertIn(EXPENSE_B, preflight.inventory_failures)
         self.assertEqual(len(preflight.actionable), 1)
+
+
+class TypeChangeBatchTests(unittest.TestCase):
+    def test_type_change_row_becomes_an_acknowledged_type_request(self):
+        row = RowPlan(EXPENSE_A, changes=[
+            FieldChange("expenseType", "Undefined", "Ground Transportation"),
+            FieldChange("custom20", "", "Taxi"),
+        ])
+        request = request_for(row, TEST_REPORT_ID)
+        self.assertEqual(request.target_type, "Ground Transportation")
+        self.assertEqual(request.expected_type, "Undefined")
+        self.assertTrue(request.allow_type_change)
+        self.assertEqual(dict(request.assignments), {"custom20": "Taxi"})
+
+    def test_dry_run_lists_type_changes_and_discards_and_token_covers_them(self):
+        sheet = sheet_for((EXPENSE_A, "after"))
+        rows = [RowPlan(EXPENSE_A, [FieldChange("expenseType", "Ground Transportation",
+                                                "Books & Publications")])]
+        def preflight(losses):
+            plan = SimpleNamespace(current_type="Ground Transportation",
+                                   target_type="Books & Publications", losses=losses)
+            return BatchPreflight(REAL_REPORT, sheet, PushPlan(row_plans=rows),
+                                  edit_plans={EXPENSE_A: plan})
+        loss = [{"name": "custom20", "label": "Type of Ground Transportation",
+                 "value": "Taxi"}]
+        text = format_preflight(preflight(loss))
+        self.assertIn("'Ground Transportation' -> 'Books & Publications'", text)
+        self.assertIn("DISCARDS Type of Ground Transportation (custom20) = 'Taxi'", text)
+        self.assertNotEqual(batch_token(preflight(loss)), batch_token(preflight([])))
 
 
 class DryRunTests(unittest.TestCase):
