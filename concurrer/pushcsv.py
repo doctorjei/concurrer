@@ -57,6 +57,7 @@ from .edit import (
     PlanError,
     build_edit_plan,
     persist_and_verify_plan,
+    wait_for_type_cascade,
 )
 from .login import authenticated_context
 from .nav import open_expense_by_id
@@ -283,7 +284,7 @@ def rehearse_one(page, report_id: str, expense_id: str, plan: EditPlan) -> Rehea
             f"live type is {live_type!r}, reviewed plan expects {plan.current_type!r}")
     with _rehearsal_grant(report_id, expense_id, plan.current_type, plan.target_type):
         select_combobox_exact(page, field_by_name(before, "expenseType"), plan.target_type)
-        after = settled_inventory(page)
+        after = wait_for_type_cascade(page, plan.target_type)
     open_expense_by_id(page, report_id, expense_id)
     reopened = field_inventory(page)
     if _values(reopened) != _values(before):

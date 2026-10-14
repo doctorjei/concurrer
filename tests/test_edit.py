@@ -14,6 +14,7 @@ from concurrer.edit import (
     validate_before_save,
     _apply_value,
     apply_plan,
+    wait_for_type_cascade,
 )
 
 
@@ -113,13 +114,38 @@ class EditPlanTests(unittest.TestCase):
         after_switch = ground_transportation_fields()  # no Request on this form
         with (
             patch("concurrer.edit.select_combobox_exact"),
-            patch("concurrer.edit.settled_inventory", return_value=after_switch),
+            patch("concurrer.edit.wait_for_type_cascade", return_value=after_switch),
+            patch("concurrer.edit.field_inventory", return_value=after_switch),
             patch("concurrer.edit.validate_target_schema"),
             patch("concurrer.edit._apply_value") as apply_value,
         ):
             with self.assertRaisesRegex(PlanError, "nothing was saved"):
                 apply_plan(object(), plan, self._undefined_fields())
         apply_value.assert_not_called()
+
+    def test_cascade_wait_ignores_a_stale_old_type_form(self) -> None:
+        # The old GT customs still showing under the new type name is stale.
+        stale = ground_transportation_fields()
+        stale[0] = form_field("expenseType", "Expense Type", "Books & Publications")
+        rendered = [form_field("expenseType", "Expense Type", "Books & Publications"),
+                    *[form_field(f.name, f.label, "", required=f.required)
+                      for f in __import__("concurrer.type_map", fromlist=["x"]).schema_for(
+                          "Books & Publications")]]
+        page = type("P", (), {"waits": [], "wait_for_timeout": lambda self, ms: self.waits.append(ms)})()
+        with (
+            patch("concurrer.edit.field_inventory", side_effect=[stale, stale, rendered]),
+            patch("concurrer.edit.settled_inventory", return_value=rendered),
+        ):
+            self.assertEqual(wait_for_type_cascade(page, "Books & Publications"), rendered)
+        self.assertEqual(len(page.waits), 2)
+
+    def test_cascade_wait_fails_loudly_if_the_form_never_rerenders(self) -> None:
+        stale = ground_transportation_fields()
+        stale[0] = form_field("expenseType", "Expense Type", "Books & Publications")
+        page = type("P", (), {"wait_for_timeout": lambda self, ms: None})()
+        with patch("concurrer.edit.field_inventory", return_value=stale):
+            with self.assertRaisesRegex(PlanError, "did not re-render"):
+                wait_for_type_cascade(page, "Books & Publications", max_reads=3)
 
     def test_type_change_requires_matching_expectation_and_acknowledgement(self) -> None:
         fields = ground_transportation_fields()

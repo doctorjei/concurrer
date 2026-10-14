@@ -236,6 +236,29 @@ def _expected_custom_schema(expense_type: str) -> set[tuple[str, str, bool]]:
     }
 
 
+def wait_for_type_cascade(page, target_type: str, *, interval_ms: int = 1000,
+                          max_reads: int = 20) -> list[dict]:
+    """Fields once the form has actually re-rendered for ``target_type``.
+
+    After a type selection Concur can keep showing the old type's fields for
+    a while (CCED GT -> Other Services rehearsal, 2026-10-14: the snapshot
+    still had GT's custom20/custom29/Request). "The field set stopped
+    changing" is not proof; the target's known custom schema appearing is.
+    """
+    expected = _expected_custom_schema(target_type)
+    for _ in range(max_reads):
+        fields = field_inventory(page)
+        try:
+            if _type_from(fields) == target_type and _live_custom_schema(fields) == expected:
+                return settled_inventory(page)
+        except (PlanError, ValueError):
+            pass  # expenseType briefly absent mid re-render
+        page.wait_for_timeout(interval_ms)
+    raise PlanError(
+        f"the form did not re-render for {target_type!r} within "
+        f"{max_reads * interval_ms // 1000}s; nothing was saved")
+
+
 def validate_target_schema(fields: list[dict], expense_type: str) -> None:
     """Require the fresh form's custom schema to match the captured type map."""
     actual = _live_custom_schema(fields)
@@ -328,13 +351,13 @@ def apply_plan(page, plan: EditPlan, before: list[dict]) -> list[dict]:
     if plan.current_type != plan.target_type:
         type_field = field_by_name(before, "expenseType")
         select_combobox_exact(page, type_field, plan.target_type)
-        after_type = settled_inventory(page)
+        after_type = wait_for_type_cascade(page, plan.target_type)
         if _type_from(after_type) != plan.target_type:
             raise PlanError(f"Expense Type did not change to {plan.target_type!r}")
         validate_target_schema(after_type, plan.target_type)
         _restore_compatible_customs(page, plan.current_type, plan.target_type, before)
 
-    current = settled_inventory(page) if plan.current_type != plan.target_type else field_inventory(page)
+    current = field_inventory(page)  # any type cascade was already awaited above
     for name, change in plan.changes.items():
         if not any(field["name"] == name for field in current):
             raise PlanError(
