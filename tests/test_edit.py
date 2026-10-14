@@ -15,6 +15,7 @@ from concurrer.edit import (
     _apply_value,
     apply_plan,
     wait_for_type_cascade,
+    TypeChangeConfirmation,
 )
 
 
@@ -133,6 +134,7 @@ class EditPlanTests(unittest.TestCase):
                           "Books & Publications")]]
         page = type("P", (), {"waits": [], "wait_for_timeout": lambda self, ms: self.waits.append(ms)})()
         with (
+            patch("concurrer.edit.blocking_dialog_text", return_value=None),
             patch("concurrer.edit.field_inventory", side_effect=[stale, stale, rendered]),
             patch("concurrer.edit.settled_inventory", return_value=rendered),
         ):
@@ -143,9 +145,25 @@ class EditPlanTests(unittest.TestCase):
         stale = ground_transportation_fields()
         stale[0] = form_field("expenseType", "Expense Type", "Books & Publications")
         page = type("P", (), {"wait_for_timeout": lambda self, ms: None})()
-        with patch("concurrer.edit.field_inventory", return_value=stale):
+        with (
+            patch("concurrer.edit.blocking_dialog_text", return_value=None),
+            patch("concurrer.edit.field_inventory", return_value=stale),
+        ):
             with self.assertRaisesRegex(PlanError, "did not re-render"):
                 wait_for_type_cascade(page, "Books & Publications", max_reads=3)
+
+    def test_cascade_wait_never_answers_a_confirmation(self) -> None:
+        page = type("P", (), {"wait_for_timeout": lambda self, ms: None})()
+        text = "Confirm\nThe following attendee types ... will be removed.\nEmployee"
+        with (
+            patch("concurrer.edit.blocking_dialog_text", return_value=text),
+            patch("concurrer.edit.field_inventory") as inventory,
+        ):
+            with self.assertRaises(TypeChangeConfirmation) as caught:
+                wait_for_type_cascade(page, "Books & Publications")
+        self.assertIn("attendee types", caught.exception.text)
+        self.assertIn("nothing was saved", str(caught.exception))
+        inventory.assert_not_called()
 
     def test_type_change_requires_matching_expectation_and_acknowledgement(self) -> None:
         fields = ground_transportation_fields()

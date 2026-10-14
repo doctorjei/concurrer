@@ -51,9 +51,24 @@ from .widgets import (
     select_payment_type_exact,
     select_search_combobox_exact,
     settled_inventory,
+    blocking_dialog_text,
 )
 
 _FIELD_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_]*\Z")
+
+
+class TypeChangeConfirmation(ValueError):
+    """Concur asked to confirm a type change (it would remove data).
+
+    Deliberately not a ``PlanError`` subclass check target for silent retry:
+    the tool never clicks Continue on such a prompt.
+    """
+
+    def __init__(self, text: str):
+        super().__init__(
+            "Concur asks for confirmation before this type change and the tool "
+            f"never confirms data removal; nothing was saved. Dialog: {text!r}")
+        self.text = text
 
 
 class PlanError(ValueError):
@@ -247,6 +262,11 @@ def wait_for_type_cascade(page, target_type: str, *, interval_ms: int = 1000,
     """
     expected = _expected_custom_schema(target_type)
     for _ in range(max_reads):
+        # Concur may hold the re-render behind a confirmation (e.g. "attendee
+        # types ... will be removed"). Never answer it here.
+        dialog = blocking_dialog_text(page)
+        if dialog:
+            raise TypeChangeConfirmation(dialog)
         fields = field_inventory(page)
         try:
             if _type_from(fields) == target_type and _live_custom_schema(fields) == expected:

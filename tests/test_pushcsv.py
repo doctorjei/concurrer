@@ -251,6 +251,32 @@ class RehearsalTests(unittest.TestCase):
         self.assertEqual([d["name"] for d in result.drops], ["location", "vendor"])
         self.assertEqual(result.missing, [])
 
+    def test_confirmation_dialog_is_cancelled_recorded_and_blocks(self):
+        from concurrer.edit import TypeChangeConfirmation
+        text = "Confirm\nattendee types ... will be removed.\nEmployee"
+        page = SimpleNamespace(wait_for_timeout=lambda _ms: None)
+        with (
+            patch("concurrer.pushcsv.open_expense_by_id"),
+            patch("concurrer.pushcsv.field_inventory",
+                  side_effect=[self.BEFORE, list(self.BEFORE)]),
+            patch("concurrer.pushcsv.select_combobox_exact"),
+            patch("concurrer.pushcsv.wait_for_type_cascade",
+                  side_effect=TypeChangeConfirmation(text)),
+            patch("concurrer.pushcsv.cancel_blocking_dialog") as cancel,
+        ):
+            result = rehearse_one(page, REAL_REPORT, EXPENSE_A, self._plan())
+        cancel.assert_called_once()
+        self.assertEqual(result.confirmation, text)
+        self.assertFalse(grant_active())
+        sheet = sheet_for((EXPENSE_A, "x"))
+        rows = [RowPlan(EXPENSE_A, [FieldChange("expenseType", "Airfare", "Phone/Fax/Internet")])]
+        preflight = BatchPreflight(REAL_REPORT, sheet, PushPlan(row_plans=rows),
+                                   edit_plans={EXPENSE_A: self._plan()})
+        with patch("concurrer.pushcsv.rehearse_one", return_value=result):
+            rehearse_type_changes(object(), preflight)
+        self.assertFalse(preflight.clean)
+        self.assertIn("WILL REMOVE (Concur confirmation", format_preflight(preflight))
+
     def test_planned_field_missing_from_target_form_is_reported(self):
         result, _, _ = self._run(list(self.BEFORE),
                                  self._plan({"travelRequestExpenseId": {"after": "x"}}))

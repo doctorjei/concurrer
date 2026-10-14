@@ -55,6 +55,7 @@ from .edit import (
     EditPlan,
     EditRequest,
     PlanError,
+    TypeChangeConfirmation,
     build_edit_plan,
     persist_and_verify_plan,
     wait_for_type_cascade,
@@ -71,6 +72,7 @@ from .secrets import resolve
 from .widgets import (
     field_by_name,
     field_inventory,
+    cancel_blocking_dialog,
     select_combobox_exact,
     settled_inventory,
 )
@@ -251,6 +253,8 @@ class Rehearsal:
 
     drops: list[dict]
     missing: list[str]
+    #: Text of a confirmation Concur demanded before re-rendering; blocking.
+    confirmation: str | None = None
 
 
 def _rehearsal_grant(report_id: str, expense_id: str, current: str, target: str):
@@ -282,9 +286,15 @@ def rehearse_one(page, report_id: str, expense_id: str, plan: EditPlan) -> Rehea
     if live_type != plan.current_type:
         raise BatchPlanError(
             f"live type is {live_type!r}, reviewed plan expects {plan.current_type!r}")
+    confirmation = None
+    after: list[dict] = []
     with _rehearsal_grant(report_id, expense_id, plan.current_type, plan.target_type):
         select_combobox_exact(page, field_by_name(before, "expenseType"), plan.target_type)
-        after = wait_for_type_cascade(page, plan.target_type)
+        try:
+            after = wait_for_type_cascade(page, plan.target_type)
+        except TypeChangeConfirmation as exc:
+            confirmation = exc.text
+            cancel_blocking_dialog(page)
     open_expense_by_id(page, report_id, expense_id)
     reopened = field_inventory(page)
     if _values(reopened) != _values(before):
@@ -297,6 +307,8 @@ def rehearse_one(page, report_id: str, expense_id: str, plan: EditPlan) -> Rehea
         for f in before
         if f.get("name") and f["name"] not in names_after and str(f["value"]).strip()
     ]
+    if confirmation is not None:
+        return Rehearsal([], [], confirmation)
     missing = [name for name in plan.changes if name not in names_after]
     return Rehearsal(drops, missing)
 
@@ -312,7 +324,11 @@ def rehearse_type_changes(page, preflight: BatchPreflight) -> None:
             preflight.edit_failures[key] = f"rehearsal failed: {type(exc).__name__}: {exc}"
             continue
         preflight.rehearsals[key] = rehearsal
-        if rehearsal.missing:
+        if rehearsal.confirmation:
+            preflight.edit_failures[key] = (
+                f"rehearsal: Concur demands confirmation for {plan.target_type!r} "
+                f"and would remove data: {rehearsal.confirmation!r}")
+        elif rehearsal.missing:
             preflight.edit_failures[key] = (
                 f"rehearsal: the {plan.target_type!r} form has no "
                 f"{', '.join(rehearsal.missing)} for this expense")
@@ -333,6 +349,11 @@ def format_preflight(preflight: BatchPreflight) -> str:
         if not plan.losses:
             type_lines.append("      discards no nonblank custom value")
         rehearsal = preflight.rehearsals.get(expense_id)
+        if rehearsal is not None and rehearsal.confirmation:
+            type_lines.append(
+                "      WILL REMOVE (Concur confirmation, rehearsed; batch blocked): "
+                + " / ".join(rehearsal.confirmation.split("\n")))
+            continue
         if rehearsal is not None:
             custom = {loss["name"] for loss in plan.losses}
             for drop in rehearsal.drops:

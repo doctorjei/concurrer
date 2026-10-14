@@ -342,6 +342,34 @@ def _dismiss_location_currency_prompt(page) -> bool:
     return True
 
 
+#: Selector for Concur's blocking confirmation modals (role varies by build).
+CONFIRM_DIALOGS = "[role=alertdialog], [role=dialog][aria-modal=true]"
+
+
+def blocking_dialog_text(page) -> str | None:
+    """Text of the one visible blocking modal, if any (read-only)."""
+    dialogs = page.locator(CONFIRM_DIALOGS)
+    texts = [dialogs.nth(i).inner_text() or "" for i in range(dialogs.count())
+             if dialogs.nth(i).is_visible()]
+    texts = [t.strip() for t in texts if t.strip()]
+    if not texts:
+        return None
+    return "\n---\n".join(texts)
+
+
+def cancel_blocking_dialog(page) -> None:
+    """Click the single Cancel of the visible blocking modal; never Continue."""
+    dialogs = page.locator(CONFIRM_DIALOGS)
+    visible = [dialogs.nth(i) for i in range(dialogs.count()) if dialogs.nth(i).is_visible()]
+    if len(visible) != 1:
+        raise RuntimeError(f"refusing to cancel an ambiguous dialog state ({len(visible)})")
+    cancel = visible[0].get_by_role("button", name="Cancel")
+    if cancel.count() != 1:
+        raise RuntimeError("blocking dialog has no single Cancel control")
+    click_safe(page, cancel, "Cancel")
+    page.wait_for_timeout(1000)
+
+
 def select_payment_type_exact(page, field: dict, requested: str) -> str:
     """Select Payment Type from its container-opened option list.
 
