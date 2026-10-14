@@ -46,7 +46,13 @@ from typing import Mapping
 from .banners import parse_banner_actions
 from .login import authenticated_context
 from .nav import open_expense_by_id
-from .safety import assert_write_authorized, test_report_write_grant
+from .safety import (
+    CONFIRMED_REPORT_IDS,
+    assert_write_authorized,
+    plan_token,
+    test_report_write_grant,
+    write_grant,
+)
 from .secrets import STATE_DIR, resolve
 
 #: The one authorized upload control. The expense page carries *two* native
@@ -297,6 +303,12 @@ def attach_receipt(page, request: ReceiptRequest) -> dict:
     wait_for_upload_ready(page)
     pre = snapshot_receipt_surface(page)
     pre_check = check_receipt_visible(page, request.source.name)
+    if pre_check.get("nameVisible"):
+        # Attachments are permanent and remove is denied: never risk a
+        # duplicate of a file the expense already shows.
+        raise ReceiptError(
+            "this receipt filename is already shown on the expense; refusing "
+            "a duplicate attachment (nothing assigned)")
 
     upload = page.locator(UPLOAD_INPUT_SELECTOR)
     if upload.count() != 1:
@@ -368,6 +380,13 @@ def attach_receipt(page, request: ReceiptRequest) -> dict:
     }
 
 
+def receipt_token(request: ReceiptRequest) -> str:
+    """Fingerprint of exactly this attachment: report, expense, file bytes."""
+    digest = hashlib.sha256(request.source.read_bytes()).hexdigest()
+    return plan_token(request.report_id,
+                      [(request.expense_id.upper(), "receipt", digest, "")])
+
+
 def _run(
     request: ReceiptRequest,
     *,
@@ -376,6 +395,10 @@ def _run(
 ) -> int:
     if not commit:
         print(f"RECEIPT PLAN (dry run) — {describe_request(request)}")
+        if request.report_id.upper() in CONFIRMED_REPORT_IDS:
+            token = receipt_token(request)
+            print(f"  PLAN TOKEN: {token}  (real report; permanent attachment — "
+                  f"to attach exactly this file: --commit --confirm {token})")
         print(
             "Dry run only — no credentials resolved, no browser opened, "
             "no write grant requested, no file assigned."
@@ -439,7 +462,13 @@ def main() -> int:
     ap.add_argument(
         "--commit",
         action="store_true",
-        help="attach only on the throwaway Test Report",
+        help="attach on the Test Report, or on the confirmed real report "
+        "with --confirm",
+    )
+    ap.add_argument(
+        "--confirm",
+        metavar="PLAN_TOKEN",
+        help="with --commit on the confirmed real report: the dry run's PLAN TOKEN",
     )
     ap.add_argument(
         "--banner-action",
@@ -459,9 +488,15 @@ def main() -> int:
             )
         request = validate_request(args.report, args.expense_id, Path(args.files[0]))
         banner_actions = parse_banner_actions(args.banner_action)
+        if args.confirm and not args.commit:
+            raise ReceiptError("--confirm is only meaningful with --commit")
         if args.commit:
             # Structural boundary before *everything* browser- or
             # credential-touching. No CLI value can widen it.
+            if request.report_id.upper() in CONFIRMED_REPORT_IDS:
+                with write_grant(request.report_id.upper(), reviewed_token=args.confirm,
+                                 live_token=receipt_token(request)):
+                    return _run(request, commit=True, banner_actions=banner_actions)
             with test_report_write_grant(request.report_id):
                 return _run(request, commit=True, banner_actions=banner_actions)
         return _run(request, commit=False, banner_actions=banner_actions)

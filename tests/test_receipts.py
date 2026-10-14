@@ -240,6 +240,53 @@ class CommitBoundaryTests(unittest.TestCase):
         attach.assert_not_called()
         self.assertFalse(grant_active())
 
+    def _cced_argv(self, *extra):
+        return ["receipts", "--report", "506EC055FE79452BB943", "--expense-id", EXPENSE,
+                "--file", str(self.target), *extra]
+
+    def test_cced_dry_run_prints_a_token_for_these_exact_bytes(self):
+        from concurrer.receipts import receipt_token, validate_request
+        out = io.StringIO()
+        with patch.object(sys, "argv", self._cced_argv()), redirect_stdout(out):
+            self.assertEqual(main(), 0)
+        token = receipt_token(validate_request("506EC055FE79452BB943", EXPENSE, self.target))
+        self.assertIn(f"PLAN TOKEN: {token}", out.getvalue())
+        self.target.write_bytes(self.target.read_bytes() + b"x")
+        self.assertNotEqual(token, receipt_token(
+            validate_request("506EC055FE79452BB943", EXPENSE, self.target)))
+
+    def test_cced_commit_with_a_wrong_token_fails_before_creds(self):
+        with (
+            patch.object(sys, "argv", self._cced_argv("--commit", "--confirm", "000000000000")),
+            patch("concurrer.receipts.resolve") as resolve_creds,
+            patch("concurrer.receipts.attach_receipt") as attach,
+        ):
+            self.assertEqual(main(), 2)
+        resolve_creds.assert_not_called()
+        attach.assert_not_called()
+        self.assertFalse(grant_active())
+
+    def test_cced_commit_with_the_token_attaches_under_a_scoped_grant(self):
+        from concurrer.receipts import receipt_token, validate_request
+        token = receipt_token(validate_request("506EC055FE79452BB943", EXPENSE, self.target))
+        seen = []
+        result = {"outcome": "verified-persisted", "detail": "ok", "expense_id": EXPENSE,
+                  "assignedCount": 1, "preHadName": False, "observedImmediate": True,
+                  "postReopen": True, "pre": {}, "post": {}}
+        with (
+            patch.object(sys, "argv", self._cced_argv("--commit", "--confirm", token)),
+            patch("concurrer.receipts.resolve", return_value=SimpleNamespace(
+                concur_username="c", ufl_username="u", ufl_password="p")),
+            patch("concurrer.receipts.authenticated_context", return_value=context_for(object())),
+            patch("concurrer.receipts.attach_receipt",
+                  side_effect=lambda *_a: seen.append(grant_active()) or result),
+            patch("concurrer.receipts.write_evidence", return_value=Path("/tmp/x.json")),
+            redirect_stdout(io.StringIO()),
+        ):
+            self.assertEqual(main(), 0)
+        self.assertEqual(seen, [True])
+        self.assertFalse(grant_active())
+
     def test_test_report_commit_enters_then_revokes_grant(self):
         argv = [
             "receipts",
@@ -299,7 +346,7 @@ class AttachTests(unittest.TestCase):
             patch("concurrer.receipts.open_expense_by_id", side_effect=lambda p, r, e: order.append("open") or EXPENSE),
             patch("concurrer.receipts.wait_for_upload_ready", side_effect=lambda p: order.append("ready") or {"count": 1}),
             patch("concurrer.receipts.snapshot_receipt_surface", side_effect=lambda p: order.append("snapshot") or {}),
-            patch("concurrer.receipts.check_receipt_visible", side_effect=lambda p, _b: order.append("check") or {"panel": True, "nameVisible": True, "itemCount": 1}),
+            patch("concurrer.receipts.check_receipt_visible", side_effect=lambda p, _b: order.append("check") or {"panel": True, "nameVisible": order.count("check") > 1, "itemCount": 1}),
             patch("concurrer.receipts.assert_write_authorized", side_effect=lambda _u: order.append("authorize")),
         ):
             result = attach_receipt(page, self._request())
@@ -312,13 +359,28 @@ class AttachTests(unittest.TestCase):
         self.assertLess(auth_index, len(order))
         self.assertEqual(page.locator_obj.clicks, 0)
 
+    def test_a_receipt_already_shown_is_never_attached_again(self):
+        page = FakePage(self.url)
+        with (
+            patch("concurrer.receipts.open_expense_by_id", return_value=EXPENSE),
+            patch("concurrer.receipts.wait_for_upload_ready", return_value={"count": 1}),
+            patch("concurrer.receipts.snapshot_receipt_surface", return_value={}),
+            patch("concurrer.receipts.check_receipt_visible",
+                  return_value={"panel": True, "nameVisible": True, "itemCount": 1}),
+            patch("concurrer.receipts.assert_write_authorized") as authorize,
+        ):
+            with self.assertRaisesRegex(ReceiptError, "duplicate"):
+                attach_receipt(page, self._request())
+        authorize.assert_not_called()
+        self.assertIsNone(page.locator_obj)  # the upload control is never touched
+
     def test_never_uses_row_navigation(self):
         page = FakePage(self.url)
         with (
             patch("concurrer.receipts.open_expense_by_id", return_value=EXPENSE),
             patch("concurrer.receipts.wait_for_upload_ready", return_value={"count": 1}),
             patch("concurrer.receipts.snapshot_receipt_surface", return_value={}),
-            patch("concurrer.receipts.check_receipt_visible", return_value={"panel": True, "nameVisible": True, "itemCount": 1}),
+            patch("concurrer.receipts.check_receipt_visible", side_effect=[{"panel": True, "nameVisible": False, "itemCount": 0}] + [{"panel": True, "nameVisible": True, "itemCount": 1}] * 5),
             patch("concurrer.receipts.assert_write_authorized"),
             patch("concurrer.nav.open_expense_edit") as by_row,
             patch("concurrer.nav.select_row") as select,
