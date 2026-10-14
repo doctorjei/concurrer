@@ -25,6 +25,9 @@ from concurrer.pushcsv import (
     batch_token,
     commit_batch,
     format_preflight,
+    Rehearsal,
+    rehearse_one,
+    rehearse_type_changes,
     main,
     preflight_batch,
     request_for,
@@ -210,6 +213,76 @@ class TypeChangeBatchTests(unittest.TestCase):
         self.assertIn("'Ground Transportation' -> 'Books & Publications'", text)
         self.assertIn("DISCARDS Type of Ground Transportation (custom20) = 'Taxi'", text)
         self.assertNotEqual(batch_token(preflight(loss)), batch_token(preflight([])))
+
+
+def _f(name, value, label=None):
+    return {"name": name, "label": label or name, "value": value}
+
+
+class RehearsalTests(unittest.TestCase):
+    BEFORE = [_f("expenseType", "Airfare", "Expense Type"), _f("location", "Houston"),
+              _f("vendor", "United"), _f("custom12", "Student Life"), _f("comment", "")]
+    AFTER = [_f("expenseType", "Phone/Fax/Internet", "Expense Type"),
+             _f("custom12", "Student Life"), _f("comment", "")]
+
+    def _plan(self, changes=None):
+        return SimpleNamespace(current_type="Airfare", target_type="Phone/Fax/Internet",
+                               changes=changes or {}, losses=[], possible_losses=[])
+
+    def _run(self, reopened, plan=None):
+        grants = []
+        page = SimpleNamespace(wait_for_timeout=lambda _ms: None)
+        with (
+            patch("concurrer.pushcsv.open_expense_by_id"),
+            patch("concurrer.pushcsv.field_inventory",
+                  side_effect=[self.BEFORE, self.AFTER, reopened]),
+            patch("concurrer.pushcsv.select_combobox_exact",
+                  side_effect=lambda *_a: grants.append(grant_active())) as select,
+        ):
+            result = rehearse_one(page, REAL_REPORT, EXPENSE_A, plan or self._plan())
+        return result, grants, select
+
+    def test_rehearsal_records_drops_under_a_scoped_grant_and_never_saves(self):
+        result, grants, select = self._run(list(self.BEFORE))
+        self.assertEqual(grants, [True])          # only the type selection is granted
+        self.assertFalse(grant_active())          # and revoked before the reopen
+        self.assertEqual(select.call_args.args[2], "Phone/Fax/Internet")
+        self.assertEqual([d["name"] for d in result.drops], ["location", "vendor"])
+        self.assertEqual(result.missing, [])
+
+    def test_planned_field_missing_from_target_form_is_reported(self):
+        result, _, _ = self._run(list(self.BEFORE),
+                                 self._plan({"travelRequestExpenseId": {"after": "x"}}))
+        self.assertEqual(result.missing, ["travelRequestExpenseId"])
+
+    def test_a_reopen_that_differs_is_a_loud_failure(self):
+        changed = [dict(f) for f in self.BEFORE]
+        changed[0]["value"] = "Phone/Fax/Internet"
+        with self.assertRaisesRegex(BatchPlanError, "REHEARSAL LEFT A CHANGE"):
+            self._run(changed)
+        self.assertFalse(grant_active())
+
+    def test_missing_field_blocks_the_batch_and_output_shows_rehearsed_drops(self):
+        sheet = sheet_for((EXPENSE_A, "x"))
+        rows = [RowPlan(EXPENSE_A, [FieldChange("expenseType", "Airfare", "Phone/Fax/Internet")])]
+        plan = self._plan()
+        plan.possible_losses = [{"name": "location", "label": "Destination", "value": "Houston"}]
+        preflight = BatchPreflight(REAL_REPORT, sheet, PushPlan(row_plans=rows),
+                                   edit_plans={EXPENSE_A: plan})
+        with patch("concurrer.pushcsv.rehearse_one", return_value=Rehearsal(
+                [{"name": "location", "label": "Destination", "value": "Houston"}],
+                ["travelRequestExpenseId"])):
+            rehearse_type_changes(object(), preflight)
+        self.assertFalse(preflight.clean)
+        text = format_preflight(preflight)
+        self.assertIn("WILL DISCARD Destination (location) = 'Houston'  [rehearsed]", text)
+        self.assertNotIn("MAY DISCARD", text)
+        self.assertIn("has no travelRequestExpenseId", text)
+
+    def test_rehearse_cannot_be_combined_with_commit(self):
+        with self.assertRaisesRegex(ValueError, "dry-run option"):
+            _run(sheet_for((EXPENSE_A, "x")), TEST_REPORT_ID, commit=True,
+                 banner_actions={}, rehearse=True)
 
 
 class DryRunTests(unittest.TestCase):

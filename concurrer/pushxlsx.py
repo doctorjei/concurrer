@@ -83,6 +83,13 @@ def main() -> int:
         "confirmed real report",
     )
     ap.add_argument(
+        "--rehearse",
+        action="store_true",
+        help="dry run only: switch each type-changing row's type in the form, "
+        "record what the new type keeps and drops, abandon without Save, and "
+        "verify the reopened expense is unchanged",
+    )
+    ap.add_argument(
         "--confirm",
         metavar="PLAN_TOKEN",
         help="with --commit on a confirmed real report: the PLAN TOKEN its dry run printed",
@@ -99,6 +106,8 @@ def main() -> int:
     try:
         report_id, sheet = load(args.xlsx)
         banner_actions = parse_banner_actions(args.banner_action)
+        if args.rehearse and args.commit:
+            raise ValueError("--rehearse is a dry-run option; it cannot be combined with --commit")
         if args.confirm and not args.commit:
             raise ValueError("--confirm is only meaningful with --commit")
         if args.commit:
@@ -107,7 +116,8 @@ def main() -> int:
             # itself, so no CLI argument can widen it.
             return run_commit(sheet, report_id, confirm=args.confirm,
                               banner_actions=banner_actions)
-        return _run(sheet, report_id, commit=False, banner_actions=banner_actions)
+        return _run(sheet, report_id, commit=False, banner_actions=banner_actions,
+                    rehearse=args.rehearse)
     except (BatchPlanError, PlanError, RoutingError, ValueError,
             AssertionError) as exc:
         print(f"pushxlsx plan error: {exc}", file=sys.stderr)

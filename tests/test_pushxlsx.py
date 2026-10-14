@@ -142,6 +142,12 @@ class WriteBoundaryTests(unittest.TestCase):
         self.assertIn("only the throwaway test report", text)
         self.assertNotIn("credentials were resolved", text)
 
+    def test_rehearse_with_commit_is_refused_before_credentials(self):
+        code, text = self.run_commit("--rehearse")
+        self.assertEqual(code, 2)
+        self.assertIn("dry-run option", text)
+        self.assertNotIn("credentials were resolved", text)
+
     def test_confirm_without_commit_is_refused(self):
         code, text = run_cli(["--xlsx", str(self.path), "--confirm", "0123456789ab"])
         self.assertEqual(code, 2)

@@ -67,7 +67,7 @@ from .safety import (
     write_grant,
 )
 from .secrets import resolve
-from .widgets import field_inventory
+from .widgets import field_by_name, field_inventory, select_combobox_exact
 
 
 class BatchPlanError(ValueError):
@@ -84,6 +84,8 @@ class BatchPreflight:
     edit_plans: dict[str, EditPlan] = field(default_factory=dict)
     inventory_failures: dict[str, str] = field(default_factory=dict)
     edit_failures: dict[str, str] = field(default_factory=dict)
+    #: Expense key -> what an unsaved in-form type switch actually showed.
+    rehearsals: dict[str, "Rehearsal"] = field(default_factory=dict)
 
     @property
     def clean(self) -> bool:
@@ -237,6 +239,80 @@ def preflight_batch(page, sheet: Sheet, report_id: str) -> BatchPreflight:
     return preflight
 
 
+@dataclass
+class Rehearsal:
+    """Facts from switching one expense's type in the form without saving."""
+
+    drops: list[dict]
+    missing: list[str]
+
+
+def _rehearsal_grant(report_id: str, expense_id: str, current: str, target: str):
+    """Grant only the in-form type selection of one rehearsal.
+
+    A confirmed real report's token is derived from this exact rehearsal; the
+    operator opted in with ``--rehearse`` for the run. The Test Report uses its
+    ordinary grant. Every other report is refused by ``authorize_writes``.
+    """
+    if report_id in CONFIRMED_REPORT_IDS:
+        token = plan_token(report_id, [(expense_id, "rehearsal:expenseType", current, target)])
+        return write_grant(report_id, reviewed_token=token, live_token=token)
+    return test_report_write_grant(report_id)
+
+
+def _values(fields: list[dict]) -> dict[str, str]:
+    return {f["name"]: f["value"] for f in fields if f.get("name")}
+
+
+def rehearse_one(page, report_id: str, expense_id: str, plan: EditPlan) -> Rehearsal:
+    """Switch type in-form, record the target form, abandon, prove no change.
+
+    Never clicks Save. Leaving is a direct-ID reopen, the same abandonment the
+    67-type sweep relied on; the reopen must match the opening state exactly.
+    """
+    open_expense_by_id(page, report_id, expense_id)
+    before = field_inventory(page)
+    live_type = field_by_name(before, "expenseType")["value"]
+    if live_type != plan.current_type:
+        raise BatchPlanError(
+            f"live type is {live_type!r}, reviewed plan expects {plan.current_type!r}")
+    with _rehearsal_grant(report_id, expense_id, plan.current_type, plan.target_type):
+        select_combobox_exact(page, field_by_name(before, "expenseType"), plan.target_type)
+        page.wait_for_timeout(2500)
+        after = field_inventory(page)
+    open_expense_by_id(page, report_id, expense_id)
+    reopened = field_inventory(page)
+    if _values(reopened) != _values(before):
+        raise BatchPlanError(
+            "REHEARSAL LEFT A CHANGE — inspect this expense manually: "
+            f"before={_values(before)!r} reopened={_values(reopened)!r}")
+    names_after = set(_values(after))
+    drops = [
+        {"name": f["name"], "label": f["label"], "value": f["value"]}
+        for f in before
+        if f.get("name") and f["name"] not in names_after and str(f["value"]).strip()
+    ]
+    missing = [name for name in plan.changes if name not in names_after]
+    return Rehearsal(drops, missing)
+
+
+def rehearse_type_changes(page, preflight: BatchPreflight) -> None:
+    """Rehearse every type-changing row; a problem blocks the whole batch."""
+    for key, plan in preflight.edit_plans.items():
+        if plan.current_type == plan.target_type:
+            continue
+        try:
+            rehearsal = rehearse_one(page, preflight.report_id, key, plan)
+        except Exception as exc:  # noqa: BLE001 - a failed rehearsal is a review fact
+            preflight.edit_failures[key] = f"rehearsal failed: {type(exc).__name__}: {exc}"
+            continue
+        preflight.rehearsals[key] = rehearsal
+        if rehearsal.missing:
+            preflight.edit_failures[key] = (
+                f"rehearsal: the {plan.target_type!r} form has no "
+                f"{', '.join(rehearsal.missing)} for this expense")
+
+
 def format_preflight(preflight: BatchPreflight) -> str:
     """Append browser/editor diagnostics to csvio's complete plan output."""
     parts = [format_plan(preflight.push)]
@@ -251,6 +327,17 @@ def format_preflight(preflight: BatchPreflight) -> str:
                 f"      DISCARDS {loss['label']} ({loss['name']}) = {loss['value']!r}")
         if not plan.losses:
             type_lines.append("      discards no nonblank custom value")
+        rehearsal = preflight.rehearsals.get(expense_id)
+        if rehearsal is not None:
+            custom = {loss["name"] for loss in plan.losses}
+            for drop in rehearsal.drops:
+                if drop["name"] not in custom:
+                    type_lines.append(
+                        f"      WILL DISCARD {drop['label']} ({drop['name']}) = "
+                        f"{drop['value']!r}  [rehearsed]")
+            if not rehearsal.drops:
+                type_lines.append("      rehearsed: the target form keeps every nonblank value")
+            continue
         for loss in getattr(plan, "possible_losses", ()):
             type_lines.append(
                 f"      MAY DISCARD {loss['label']} ({loss['name']}) = {loss['value']!r}"
@@ -384,8 +471,11 @@ def _run(
     commit: bool,
     banner_actions: Mapping[str, str],
     confirm: str | None = None,
+    rehearse: bool = False,
 ) -> int:
     """Authenticate once, preflight all rows, then optionally commit."""
+    if rehearse and commit:
+        raise ValueError("--rehearse is a dry-run option; it cannot be combined with --commit")
     creds = resolve()
     with authenticated_context(
         concur_username=creds.concur_username,
@@ -394,6 +484,8 @@ def _run(
         banner_actions=banner_actions,
     ) as page:
         preflight = preflight_batch(page, sheet, report_id)
+        if rehearse:
+            rehearse_type_changes(page, preflight)
         print(format_preflight(preflight))
         if not preflight.clean:
             return 2
@@ -403,7 +495,12 @@ def _run(
             print(f"\n  PLAN TOKEN: {token}  (real report {report_id}; to write "
                   f"exactly this plan: --commit --confirm {token})")
         if not commit:
-            print("\nDry run only — no fields filled, no write grant requested, no Save clicked.")
+            if rehearse:
+                print(f"\nDry run with rehearsal — {len(preflight.rehearsals)} type "
+                      "change(s) switched in-form and abandoned; each reopen matched "
+                      "its original values. No Save clicked.")
+            else:
+                print("\nDry run only — no fields filled, no write grant requested, no Save clicked.")
             return 0
         if confirmed:
             # Raises before any fill unless the reviewed token equals the plan
