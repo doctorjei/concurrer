@@ -283,6 +283,27 @@ REQUEST_FIELD = {
 }
 
 
+class ReadbackTests(unittest.TestCase):
+    def test_label_miss_falls_back_to_the_stable_name(self):
+        field = {"name": "expenseType", "label": "Expense Type"}
+        with (
+            patch("concurrer.widgets.field_value", return_value="<no such label>"),
+            patch("concurrer.widgets.field_value_by_name",
+                  return_value="Phone/Fax/Internet") as by_name,
+        ):
+            self.assertEqual(widgets._readback(object(), field), "Phone/Fax/Internet")
+        by_name.assert_called_once()
+
+    def test_a_real_label_value_is_used_as_is(self):
+        with (
+            patch("concurrer.widgets.field_value", return_value="Airfare"),
+            patch("concurrer.widgets.field_value_by_name") as by_name,
+        ):
+            self.assertEqual(widgets._readback(object(), {"name": "expenseType",
+                                                          "label": "Expense Type"}), "Airfare")
+        by_name.assert_not_called()
+
+
 class RequestPickerTests(unittest.TestCase):
     def test_request_opens_from_its_combobox_container(self):
         self.assertEqual(widgets._trigger_for(REQUEST_FIELD), "field-travelRequestExpenseId")

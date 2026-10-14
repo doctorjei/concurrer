@@ -38,6 +38,24 @@ def field_value(page, label: str) -> str:
     )
 
 
+#: ``field_value`` sentinels meaning the label lookup itself failed.
+_LABEL_MISSES = ("<no such label>", "<no container>", "<no value el>")
+
+
+def _readback(page, field: dict) -> str:
+    """Displayed value after a write: by visible label, else by stable name.
+
+    On a card-fed CCED Airfare -> Phone/Fax/Internet switch the label lookup
+    found no "Expense Type" label although the form showed it and the
+    name-keyed inventory read the new value (rehearsal 2026-10-14). A label
+    miss is a lookup failure, not a value, so fall back to the stable name.
+    """
+    value = field_value(page, field["label"])
+    if value in _LABEL_MISSES and field.get("name"):
+        return field_value_by_name(page, field["name"])
+    return value
+
+
 def field_inventory(page) -> list[dict]:
     """Read complete live field state using stable canonical field names.
 
@@ -253,13 +271,13 @@ def select_search_combobox_exact(page, field: dict, requested: str,
     options = page.locator(OPTIONS)
     click_safe(page, options.nth(index), chosen)
     page.wait_for_timeout(1200)
-    after = field_value(page, field["label"])
+    after = _readback(page, field)
     if _norm(after) != _norm(requested):
         raise RuntimeError(
             f"field {field['label']!r} did not take {requested!r}; now {after!r}"
         )
     _dismiss_location_currency_prompt(page)
-    after = field_value(page, field["label"])
+    after = _readback(page, field)
     if _norm(after) != _norm(requested):
         raise RuntimeError(
             f"field {field['label']!r} did not retain {requested!r}; now {after!r}"
@@ -319,12 +337,12 @@ def select_payment_type_exact(page, field: dict, requested: str) -> str:
     texts = list(dict.fromkeys(got.get("texts", [])))
     index = exact_option_position(texts, requested)
     chosen = texts[index].split("\n")[0].strip()
-    if _norm(field_value(page, field["label"])) != _norm(requested):
+    if _norm(_readback(page, field)) != _norm(requested):
         assert_write_authorized(page.url)
         options = page.locator(OPTIONS)
         click_safe(page, options.nth(index), chosen)
         page.wait_for_timeout(1200)
-    after = field_value(page, field["label"])
+    after = _readback(page, field)
     if _norm(after) != _norm(requested):
         raise RuntimeError(
             f"field {field['label']!r} did not take {requested!r}; now {after!r}"
@@ -372,7 +390,7 @@ def select_combobox_exact(page, field: dict, requested: str) -> str:
     options = page.locator(OPTIONS)
     click_safe(page, options.nth(index), chosen)
     page.wait_for_timeout(1200)
-    after = field_value(page, field["label"])
+    after = _readback(page, field)
     if _norm(after) != _norm(requested):
         raise RuntimeError(
             f"field {field['label']!r} did not take {requested!r}; now {after!r}"
