@@ -273,6 +273,41 @@ PAYMENT_FIELD = {
 }
 
 
+REQUEST_FIELD = {
+    "name": "travelRequestExpenseId",
+    "label": "Request",
+    "widget": "combobox",
+    "locked": False,
+    "trigger": "",
+    "nuiexp": ["field-travelRequestExpenseId", "field-travelRequestExpenseId__input"],
+}
+
+
+class RequestPickerTests(unittest.TestCase):
+    def test_request_opens_from_its_combobox_container(self):
+        self.assertEqual(widgets._trigger_for(REQUEST_FIELD), "field-travelRequestExpenseId")
+
+    def test_request_selects_the_exact_option_and_reads_it_back(self):
+        page = FakePage()
+        selectors = []
+        page.locator = lambda selector: selectors.append(selector) or FakeLocator()
+        wanted = "05/04/2026, $800.00 - CCED Summer 2026"
+        with (
+            patch("concurrer.widgets.assert_write_authorized"),
+            patch("concurrer.widgets.click_safe") as click,
+            patch("concurrer.widgets._option_texts",
+                  return_value=["None Selected", "None", wanted]),
+            patch("concurrer.widgets.field_value", return_value=wanted),
+        ):
+            self.assertEqual(widgets.select_combobox_exact(page, REQUEST_FIELD, wanted), wanted)
+        self.assertIn('[data-nuiexp="field-travelRequestExpenseId"]', selectors)
+        self.assertEqual(click.call_count, 2)  # open, then the one exact option
+
+    def test_request_none_does_not_match_none_selected(self):
+        self.assertEqual(
+            widgets.exact_option_position(["None Selected", "None", "X"], "None"), 1)
+
+
 class PaymentTypeTests(unittest.TestCase):
     def test_autopopulated_requested_value_needs_no_option_click(self):
         page = PaymentPage([])

@@ -208,11 +208,9 @@ def validate_target_schema(fields: list[dict], expense_type: str) -> None:
 
 
 #: Fields with no exact write helper yet. Refused at plan time so a dry run
-#: reports them, instead of a commit failing mid-row at fill time.
-UNWRITABLE_FIELDS = {
-    "travelRequestExpenseId": "the Request picker has no stable options trigger "
-    "and no exact-select write helper yet",
-}
+#: reports them, instead of a commit failing mid-row at fill time. (Request
+#: left this list once its container-triggered picker was mapped.)
+UNWRITABLE_FIELDS: dict[str, str] = {}
 
 
 def validate_before_save(fields: list[dict], plan: EditPlan) -> None:

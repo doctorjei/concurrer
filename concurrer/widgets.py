@@ -160,10 +160,18 @@ def exact_option_position(option_texts: list[str], requested: str) -> int:
     return matches[0]
 
 
+#: Pickers with no ``__trigger`` element: the ``field-<name>`` container is
+#: itself the ``role=combobox`` that opens an ordinary option list (read-only
+#: probe on CCED, 2026-10-12: "None Selected" / "None" / linked requests).
+CONTAINER_TRIGGERED = frozenset({"travelRequestExpenseId"})
+
+
 def _trigger_for(field: dict) -> str:
     trigger = field.get("trigger") or ""
     if trigger:
         return trigger
+    if field.get("name") in CONTAINER_TRIGGERED:
+        return f"field-{field['name']}"
     for nuiexp in field.get("nuiexp", []):
         if nuiexp.endswith("__trigger"):
             return nuiexp
