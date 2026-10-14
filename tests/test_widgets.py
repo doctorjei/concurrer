@@ -119,6 +119,34 @@ class WidgetTests(unittest.TestCase):
         with patch("concurrer.widgets.assert_write_authorized"):
             self.assertEqual(widgets.fill_text_exact(page, field, "after"), "after")
 
+    def test_amount_is_found_exactly_beside_amount_in_usd(self) -> None:
+        class Loc:
+            def __init__(self, n):
+                self.n, self.value = n, ""
+            def count(self):
+                return self.n
+            def fill(self, value):
+                self.value = value
+            def input_value(self):
+                return self.value
+
+        class Page:
+            url = "https://us2.concursolutions.com/nui/expense/reports/TEST/expenses/E"
+            def __init__(self):
+                self.calls, self.named = [], Loc(1)
+            def get_by_role(self, _role, **kwargs):
+                self.calls.append(kwargs)
+                return Loc(1 if kwargs.get("exact") else 2)
+            def locator(self, _selector):
+                return self.named
+
+        page = Page()
+        field = {"name": "transactionAmount", "label": "Amount",
+                 "widget": "input/text", "locked": False, "maxlength": ""}
+        with patch("concurrer.widgets.assert_write_authorized"):
+            widgets.fill_text_exact(page, field, "150")
+        self.assertTrue(page.calls[0].get("exact"))
+
 
 if __name__ == "__main__":
     unittest.main()

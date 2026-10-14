@@ -489,11 +489,13 @@ def fill_text_exact(page, field: dict, value: str) -> str:
         )
     assert_write_authorized(page.url)
 
-    loc = page.get_by_role("textbox", name=field["label"])
-    if loc.count() == 0 and field.get("name"):
+    # Exact label: a substring match finds both "Amount" and "Amount in USD"
+    # once a foreign currency is chosen (CCED create proof, 2026-10-14).
+    loc = page.get_by_role("textbox", name=field["label"], exact=True)
+    if loc.count() != 1 and field.get("name"):
         name = field["name"]
         loc = page.locator(f"input[name='{name}'], textarea[name='{name}']")
-    if loc.count() == 0 and field.get("inputNuiexp"):
+    if loc.count() != 1 and field.get("inputNuiexp"):
         loc = page.locator(f'[data-nuiexp="{field["inputNuiexp"]}"]')
     if loc.count() != 1:
         raise RuntimeError(f"expected one native control for field {field['label']!r}")
