@@ -68,6 +68,25 @@ def _readback(page, field: dict) -> str:
     return value
 
 
+def settled_inventory(page, *, interval_ms: int = 1000, max_reads: int = 10) -> list[dict]:
+    """Field inventory once the form stops changing shape.
+
+    A type switch re-renders the form progressively; one fixed-delay read can
+    miss fields still being added. Read until two consecutive reads show the
+    same field names (and Expense Type is present), up to ``max_reads``.
+    """
+    previous = None
+    fields: list[dict] = []
+    for _ in range(max_reads):
+        fields = field_inventory(page)
+        names = tuple(sorted(f["name"] for f in fields if f.get("name")))
+        if names == previous and "expenseType" in names:
+            return fields
+        previous = names
+        page.wait_for_timeout(interval_ms)
+    return fields
+
+
 def field_inventory(page) -> list[dict]:
     """Read complete live field state using stable canonical field names.
 

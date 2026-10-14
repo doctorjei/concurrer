@@ -284,6 +284,17 @@ REQUEST_FIELD = {
 }
 
 
+class SettledInventoryTests(unittest.TestCase):
+    def test_waits_until_the_field_set_stops_changing(self):
+        early = [{"name": "expenseType", "value": "X"}]
+        full = early + [{"name": "location", "value": ""}]
+        page = SimpleNamespace(waits=[])
+        page.wait_for_timeout = page.waits.append
+        with patch("concurrer.widgets.field_inventory", side_effect=[early, full, full]):
+            self.assertEqual(widgets.settled_inventory(page), full)
+        self.assertEqual(len(page.waits), 2)
+
+
 class ReadbackTests(unittest.TestCase):
     def test_label_miss_falls_back_to_the_stable_name(self):
         field = {"name": "expenseType", "label": "Expense Type"}

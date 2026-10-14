@@ -67,7 +67,12 @@ from .safety import (
     write_grant,
 )
 from .secrets import resolve
-from .widgets import field_by_name, field_inventory, select_combobox_exact
+from .widgets import (
+    field_by_name,
+    field_inventory,
+    select_combobox_exact,
+    settled_inventory,
+)
 
 
 class BatchPlanError(ValueError):
@@ -278,8 +283,7 @@ def rehearse_one(page, report_id: str, expense_id: str, plan: EditPlan) -> Rehea
             f"live type is {live_type!r}, reviewed plan expects {plan.current_type!r}")
     with _rehearsal_grant(report_id, expense_id, plan.current_type, plan.target_type):
         select_combobox_exact(page, field_by_name(before, "expenseType"), plan.target_type)
-        page.wait_for_timeout(2500)
-        after = field_inventory(page)
+        after = settled_inventory(page)
     open_expense_by_id(page, report_id, expense_id)
     reopened = field_inventory(page)
     if _values(reopened) != _values(before):

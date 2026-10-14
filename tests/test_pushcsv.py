@@ -235,7 +235,8 @@ class RehearsalTests(unittest.TestCase):
         with (
             patch("concurrer.pushcsv.open_expense_by_id"),
             patch("concurrer.pushcsv.field_inventory",
-                  side_effect=[self.BEFORE, self.AFTER, reopened]),
+                  side_effect=[self.BEFORE, reopened]),
+            patch("concurrer.pushcsv.settled_inventory", return_value=self.AFTER),
             patch("concurrer.pushcsv.select_combobox_exact",
                   side_effect=lambda *_a: grants.append(grant_active())) as select,
         ):

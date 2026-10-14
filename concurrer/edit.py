@@ -50,6 +50,7 @@ from .widgets import (
     select_combobox_exact,
     select_payment_type_exact,
     select_search_combobox_exact,
+    settled_inventory,
 )
 
 _FIELD_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_]*\Z")
@@ -327,13 +328,13 @@ def apply_plan(page, plan: EditPlan, before: list[dict]) -> list[dict]:
     if plan.current_type != plan.target_type:
         type_field = field_by_name(before, "expenseType")
         select_combobox_exact(page, type_field, plan.target_type)
-        after_type = field_inventory(page)
+        after_type = settled_inventory(page)
         if _type_from(after_type) != plan.target_type:
             raise PlanError(f"Expense Type did not change to {plan.target_type!r}")
         validate_target_schema(after_type, plan.target_type)
         _restore_compatible_customs(page, plan.current_type, plan.target_type, before)
 
-    current = field_inventory(page)
+    current = settled_inventory(page) if plan.current_type != plan.target_type else field_inventory(page)
     for name, change in plan.changes.items():
         if not any(field["name"] == name for field in current):
             raise PlanError(

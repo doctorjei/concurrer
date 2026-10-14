@@ -113,7 +113,7 @@ class EditPlanTests(unittest.TestCase):
         after_switch = ground_transportation_fields()  # no Request on this form
         with (
             patch("concurrer.edit.select_combobox_exact"),
-            patch("concurrer.edit.field_inventory", return_value=after_switch),
+            patch("concurrer.edit.settled_inventory", return_value=after_switch),
             patch("concurrer.edit.validate_target_schema"),
             patch("concurrer.edit._apply_value") as apply_value,
         ):
