@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from concurrer import widgets
@@ -293,6 +294,27 @@ class ReadbackTests(unittest.TestCase):
         ):
             self.assertEqual(widgets._readback(object(), field), "Phone/Fax/Internet")
         by_name.assert_called_once()
+
+    def test_readback_waits_out_a_form_rerender(self):
+        page = SimpleNamespace(waits=[])
+        page.wait_for_timeout = page.waits.append
+        field = {"name": "expenseType", "label": "Expense Type"}
+        with (
+            patch("concurrer.widgets.field_value", return_value="<no such label>"),
+            patch("concurrer.widgets.field_value_by_name",
+                  side_effect=[ValueError("absent"), ValueError("absent"), "Supplies"]),
+        ):
+            self.assertEqual(widgets._readback(page, field), "Supplies")
+        self.assertEqual(page.waits, [500, 500])
+
+    def test_readback_gives_up_with_the_miss_not_a_guess(self):
+        page = SimpleNamespace(wait_for_timeout=lambda _ms: None)
+        with (
+            patch("concurrer.widgets.field_value", return_value="<no such label>"),
+            patch("concurrer.widgets.field_value_by_name", side_effect=ValueError("absent")),
+        ):
+            self.assertEqual(widgets._readback(page, {"name": "x", "label": "X"}),
+                             "<no such label>")
 
     def test_a_real_label_value_is_used_as_is(self):
         with (

@@ -40,6 +40,7 @@ def field_value(page, label: str) -> str:
 
 #: ``field_value`` sentinels meaning the label lookup itself failed.
 _LABEL_MISSES = ("<no such label>", "<no container>", "<no value el>")
+_READBACK_TRIES = 16  # x 500 ms
 
 
 def _readback(page, field: dict) -> str:
@@ -50,9 +51,20 @@ def _readback(page, field: dict) -> str:
     name-keyed inventory read the new value (rehearsal 2026-10-14). A label
     miss is a lookup failure, not a value, so fall back to the stable name.
     """
-    value = field_value(page, field["label"])
-    if value in _LABEL_MISSES and field.get("name"):
-        return field_value_by_name(page, field["name"])
+    # A type switch re-renders the whole form; for a moment neither the label
+    # nor the named field exists (Test Report Train/Rail -> Supplies,
+    # 2026-10-14). Poll briefly instead of reading one fixed instant.
+    for attempt in range(_READBACK_TRIES):
+        value = field_value(page, field["label"])
+        if value not in _LABEL_MISSES:
+            return value
+        if field.get("name"):
+            try:
+                return field_value_by_name(page, field["name"])
+            except ValueError:
+                pass
+        if attempt + 1 < _READBACK_TRIES:
+            page.wait_for_timeout(500)
     return value
 
 
