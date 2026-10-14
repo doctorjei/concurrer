@@ -194,6 +194,28 @@ class XlsxTests(unittest.TestCase):
         self.assertLess(fills.index("00FFFF99"), fills.index("00F2F2F2"))
         self.assertTrue(rules[fills.index("00FFFF99")].stopIfTrue)
 
+    def test_new_value_in_an_unverified_cell_is_red_and_blocks(self):
+        # Airfare -> Phone/Fax/Internet: the latter's blank form has no
+        # Desc./Justification, so a new value there has nowhere to go.
+        write_workbook(self.path, data())
+        wb = load_workbook(self.path)
+        ws = wb[EXPENSES]
+        headers = [c.value for c in ws[1]]
+        ws.cell(3, headers.index("Expense Type") + 1).value = "Phone/Fax/Internet"
+        ws.cell(3, headers.index("Desc./Justification") + 1).value = "Flight Wifi"
+        wb.save(self.path)
+        flagged = {(i.header, i.kind) for i in workbook_issues(self.path)}
+        self.assertIn(("Desc./Justification", "unverified-new"), flagged)
+        # The unchanged exported Location on that row stays yellow, not red.
+        self.assertNotIn(("Location", "unverified-new"), flagged)
+        letter = get_column_letter(headers.index("Desc./Justification") + 1)
+        rules = [r for rng in ws.conditional_formatting
+                 if str(rng.sqref).startswith(f"{letter}2:") for r in rng.rules]
+        fills = [r.dxf.fill.fgColor.rgb for r in rules]
+        red_new = next(i for i, r in enumerate(rules)
+                       if "Orig!" in r.formula[0] and r.dxf.fill.fgColor.rgb == "00FF9999")
+        self.assertLess(red_new, fills.index("00FFFF99"))
+
     def test_untouched_off_list_value_does_not_block_the_batch(self):
         # A freshly exported "Undefined" type is Concur's own state: it is
         # never written, so it must not block an unrelated edit elsewhere.

@@ -630,6 +630,8 @@ def build_workbook(data: WorkbookData) -> Workbook:
     currency_letter = get_column_letter(
         next(i for i, c in enumerate(columns, 1)
              if c.field == "transactionCurrencyName"))
+    id_col_letter = get_column_letter(
+        next(i for i, c in enumerate(columns, 1) if c.header == ID_HEADER))
     for r, record in enumerate(exp_recs, start=2):
         for ci, col in enumerate(columns, start=1):
             if col.header == ID_HEADER:
@@ -791,6 +793,13 @@ def build_workbook(data: WorkbookData) -> Workbook:
             ws.conditional_formatting.add(
                 rng, FormulaRule(formula=[f'AND({editable},{na},{letter}2="")'],
                                  fill=FILL_NA))
+            orig_here = (f'IFERROR(INDEX({ORIG}!$A:$ZZ,MATCH(${id_col_letter}2,'
+                         f'{ORIG}!${id_col_letter}:${id_col_letter},0),'
+                         f'MATCH({letter}$1,{ORIG}!$1:$1,0)),"")')
+            ws.conditional_formatting.add(
+                rng, FormulaRule(formula=[f'AND({editable},{ok},NOT({hasrow}),'
+                                          f'{letter}2<>"",{letter}2<>{orig_here})'],
+                                 fill=FILL_WRONG, stopIfTrue=True))
             ws.conditional_formatting.add(
                 rng, FormulaRule(formula=[f'AND({editable},{ok},NOT({hasrow}))'],
                                  fill=FILL_UNVERIFIED, stopIfTrue=True))
@@ -1085,6 +1094,14 @@ def workbook_issues(path: Path) -> list[WorkbookIssue]:
                 untouched = value == (
                     str(orig.cell(original_row, original_at[header]).value or "")
                     if header in original_at else "")
+                # Yellow (applicability unverified) accepts no new value: there
+                # may be no such field on this expense's form (operator
+                # 2026-10-14, Desc./Justification on Phone/Fax/Internet).
+                if not field_facts and value.strip() and not untouched:
+                    issues.append(WorkbookIssue(expense_id, row_number, header,
+                        "unverified-new", f"{expense_type!r} may not have this "
+                        "field; a new value cannot be written until verified"))
+                    continue
                 required = any(fact[1] for fact in field_facts)
                 if changed and required and not value.strip():
                     issues.append(WorkbookIssue(expense_id, row_number, header,
