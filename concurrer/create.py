@@ -176,13 +176,25 @@ def _report_ids(page, report_id: str) -> set[str]:
 
 def _choose_type(page, expense_type: str) -> None:
     """Pick the leaf whose first line is exactly the type (never a category)."""
-    picker = page.get_by_text(expense_type, exact=False)
+    # Search only inside the open create dialog: the report's expense list
+    # behind it shows the same type names (CCED, 2026-10-14: a hidden list
+    # cell "Ground Transportation" was matched and its click timed out).
+    dialogs = page.locator("[role=dialog]")
+    scope = dialogs.last if dialogs.count() else page
+    picker = scope.get_by_text(expense_type, exact=False)
+    matches = []
     for i in range(picker.count()):
-        first = picker.nth(i).inner_text().strip().split("\n")[0].strip()
+        candidate = picker.nth(i)
+        if not candidate.is_visible():
+            continue
+        first = candidate.inner_text().strip().split("\n")[0].strip()
         if first.casefold() == expense_type.casefold():
-            click_safe(page, picker.nth(i), f"type:{expense_type}")
-            return
-    raise CreatePlanError(f"type {expense_type!r} has no exact entry in the picker")
+            matches.append(candidate)
+    if len(matches) != 1:
+        raise CreatePlanError(
+            f"type {expense_type!r}: expected one visible exact entry in the "
+            f"create picker, found {len(matches)}")
+    click_safe(page, matches[0], f"type:{expense_type}")
 
 
 def _values(fields: list[dict]) -> dict[str, str]:

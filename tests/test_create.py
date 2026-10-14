@@ -103,5 +103,54 @@ class CreatePlanTests(unittest.TestCase):
         resolve_creds.assert_not_called()
 
 
+class TypePickerTests(unittest.TestCase):
+    def _page(self, entries):
+        class Cand:
+            def __init__(self, text, visible):
+                self.text, self.visible = text, visible
+            def is_visible(self):
+                return self.visible
+            def inner_text(self):
+                return self.text
+
+        class Many:
+            def __init__(self, items):
+                self.items = items
+            def count(self):
+                return len(self.items)
+            def nth(self, i):
+                return self.items[i]
+            @property
+            def last(self):
+                return Scope()
+
+        class Scope:
+            def get_by_text(self, *_a, **_k):
+                return Many([Cand(t, v) for t, v in entries])
+
+        class Page:
+            def locator(self, _sel):
+                return Many([object()])
+        return Page()
+
+    def test_clicks_the_single_visible_exact_leaf_in_the_dialog(self):
+        from concurrer.create import _choose_type
+        page = self._page([("Ground Transportation", False),          # hidden list cell
+                           ("Ground Transportation Services\nx", True),
+                           ("Ground Transportation\nAccount code", True)])
+        with patch("concurrer.create.click_safe") as click:
+            _choose_type(page, "Ground Transportation")
+        self.assertEqual(click.call_args.args[1].text, "Ground Transportation\nAccount code")
+
+    def test_ambiguous_or_missing_entry_is_refused(self):
+        from concurrer.create import CreatePlanError, _choose_type
+        for entries in ([], [("Ground Transportation", True)] * 2):
+            with self.subTest(n=len(entries)):
+                with patch("concurrer.create.click_safe") as click:
+                    with self.assertRaises(CreatePlanError):
+                        _choose_type(self._page(entries), "Ground Transportation")
+                click.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
