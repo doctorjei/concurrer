@@ -163,6 +163,30 @@ class RoutingTests(unittest.TestCase):
             push_rows(self.path)
         self.assertIn("does not apply", str(caught.exception))
 
+    def _airfare_retyped(self, vendor=None):
+        """Row 9 shape: Airfare -> Phone/Fax/Internet, whose blank form has
+        no vendor field, so vendor has no route for the new type."""
+        self.write([airfare()])
+        wb = load_workbook(self.path)
+        ws = wb[EXPENSES]
+        headers = [c.value for c in ws[1]]
+        ws.cell(row=2, column=headers.index("Expense Type") + 1).value = "Phone/Fax/Internet"
+        if vendor is not None:
+            ws.cell(row=2, column=headers.index("vendor") + 1).value = vendor
+        wb.save(self.path)
+
+    def test_unchanged_unroutable_value_is_left_to_concur(self):
+        # Not an edit: the dry run reports it under MAY DISCARD instead.
+        self._airfare_retyped()
+        _, rows = push_rows(self.path)
+        self.assertNotIn("vendor", rows["DDDD4444"])
+        self.assertEqual(rows["DDDD4444"]["expenseType"], "Phone/Fax/Internet")
+
+    def test_new_unroutable_value_is_still_refused(self):
+        self._airfare_retyped(vendor="Delta")
+        with self.assertRaisesRegex(RoutingError, "does not apply"):
+            push_rows(self.path)
+
     def test_ambiguous_routing_is_refused(self):
         routing = {("Airfare", "days/nights"): {"custom28", "custom24"}}
         with self.assertRaises(RoutingError) as caught:

@@ -98,6 +98,10 @@ FONT_BLOCKED = Font(color="FFFFFF", bold=True)
 FILL_REQUIRED = PatternFill("solid", fgColor="F8D7DA")
 FILL_GOOD = PatternFill("solid", fgColor="C6EFCE")
 FILL_OPTIONAL = PatternFill("solid", fgColor="F2F2F2")
+#: Applicability unknown: the target type's blank form lacks this standard
+#: field, but card-fed forms can differ. Not "optional" (operator 2026-10-14:
+#: light grey read as "allowed"); an existing value may be dropped by Concur.
+FILL_UNVERIFIED = PatternFill("solid", fgColor="FFFF99")
 FILL_NA = PatternFill("solid", fgColor="D9D9D9")
 FILL_WRONG = PatternFill("solid", fgColor="FF9999")
 FILL_HEADER = PatternFill("solid", fgColor="1F3864")
@@ -788,6 +792,9 @@ def build_workbook(data: WorkbookData) -> Workbook:
                 rng, FormulaRule(formula=[f'AND({editable},{na},{letter}2="")'],
                                  fill=FILL_NA))
             ws.conditional_formatting.add(
+                rng, FormulaRule(formula=[f'AND({editable},{ok},NOT({hasrow}))'],
+                                 fill=FILL_UNVERIFIED, stopIfTrue=True))
+            ws.conditional_formatting.add(
                 rng, FormulaRule(formula=[f'AND({editable},{ok},NOT({req}))'],
                                  fill=FILL_OPTIONAL))
 
@@ -1160,6 +1167,26 @@ def route_merged(
     return next(iter(fields))
 
 
+def _original_values(path: Path) -> dict[str, dict[str, str]]:
+    """Export-time values from the hidden Orig sheet, by expense and header."""
+    wb = load_workbook(path, read_only=True)
+    try:
+        if ORIG not in wb.sheetnames:
+            return {}
+        rows = wb[ORIG].iter_rows(values_only=True)
+        headers = [str(h or "") for h in next(rows, ())]
+        if ID_HEADER not in headers:
+            return {}
+        at = headers.index(ID_HEADER)
+        return {
+            str(row[at]).strip(): {h: "" if v is None else str(v)
+                                   for h, v in zip(headers, row)}
+            for row in rows if row and row[at]
+        }
+    finally:
+        wb.close()
+
+
 def push_rows(
     path: Path,
 ) -> tuple[str, dict[str, dict[str, str]]]:
@@ -1184,6 +1211,7 @@ def push_rows(
     """
     report_id, values_by_id = read_workbook(path)
     routing = read_backend_routing(path)
+    original = _original_values(path)
     out: dict[str, dict[str, str]] = {}
     for expense_id, values in values_by_id.items():
         expense_type = str(values.get(TYPE_KEY) or "").strip()
@@ -1198,7 +1226,11 @@ def push_rows(
             if name == MERGED_FIELD:
                 field_name = route_merged(routing, expense_type, meaning)
                 if field_name is None:
-                    if not blank:
+                    # An unchanged export value is not an edit: leave it to
+                    # Concur (the dry run lists it under MAY DISCARD). Only a
+                    # new value with nowhere to go is refused.
+                    unchanged = str(value) == original.get(expense_id, {}).get(meaning, "")
+                    if not blank and not unchanged:
                         raise RoutingError(
                             f"expense {expense_id}: column {meaning!r} holds "
                             f"{value!r} but does not apply to expense type "

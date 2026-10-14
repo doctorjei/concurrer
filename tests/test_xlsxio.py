@@ -179,6 +179,21 @@ class XlsxTests(unittest.TestCase):
         wb.save(self.path)
         self.assertIn("locked-deviation", {issue.kind for issue in workbook_issues(self.path)})
 
+    def test_unverified_applicability_is_yellow_not_optional_grey(self):
+        # Operator 2026-10-14: light grey read as "allowed". A standard field
+        # with no Backend Data row for the row's type is unknown, not optional.
+        write_workbook(self.path, data())
+        ws = load_workbook(self.path)[EXPENSES]
+        headers = [c.value for c in ws[1]]
+        letter = get_column_letter(headers.index("Location") + 1)
+        rules = [r for rng in ws.conditional_formatting
+                 if str(rng.sqref).startswith(f"{letter}2:") for r in rng.rules]
+        fills = [r.dxf.fill.fgColor.rgb for r in rules]
+        self.assertIn("00FFFF99", fills)
+        # Yellow is evaluated before (and stops) the optional grey.
+        self.assertLess(fills.index("00FFFF99"), fills.index("00F2F2F2"))
+        self.assertTrue(rules[fills.index("00FFFF99")].stopIfTrue)
+
     def test_untouched_off_list_value_does_not_block_the_batch(self):
         # A freshly exported "Undefined" type is Concur's own state: it is
         # never written, so it must not block an unrelated edit elsewhere.

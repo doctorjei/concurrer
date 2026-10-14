@@ -234,6 +234,7 @@ Type changes:
 | Required, empty | pink |
 | Invalid — value where prohibited, off-list, non-whole, or a blocked cell that changed | bright red |
 | Optional, filled or not | very light grey |
+| Unverified — the type's blank form lacks this field; an existing value may be dropped, a new one is refused | yellow |
 | Field absent from this row's type | grey (red if it holds a value) |
 | Blocked by Concur | black background, bold white type |
 
