@@ -233,6 +233,14 @@ def _live_inventories(page, sheet: Sheet, report_id: str) -> tuple[dict[str, lis
 def preflight_batch(page, sheet: Sheet, report_id: str, *,
                     accept_attendee_removal: bool = False) -> BatchPreflight:
     """Read fresh state and build every reviewable plan without writing."""
+    # A row with no nonblank field value carries no edit (blank means no
+    # change; the workbook reader already drops cells equal to the export),
+    # so it needs no live read. Skipping it turns a 144-row read into one per
+    # edited row; such rows could never contribute a change or a token part.
+    edited = tuple(row for row in sheet.rows
+                   if any(str(row.get(c) or "").strip() for c in sheet.field_columns))
+    sheet = Sheet(field_columns=sheet.field_columns, rows=edited,
+                  allow_type_changes=sheet.allow_type_changes)
     live_by_id, inventory_failures = _live_inventories(page, sheet, report_id)
     push = plan_push(sheet, live_by_id)
     preflight = BatchPreflight(

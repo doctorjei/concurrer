@@ -324,6 +324,24 @@ class RehearsalTests(unittest.TestCase):
                  banner_actions={}, rehearse=True)
 
 
+class EditedRowsOnlyTests(unittest.TestCase):
+    def test_rows_without_edits_are_never_opened(self):
+        sheet = Sheet(field_columns=("comment",), rows=(
+            {"expense_id": EXPENSE_A, "report_id": TEST_REPORT_ID, "comment": "new"},
+            {"expense_id": EXPENSE_B, "report_id": TEST_REPORT_ID},
+        ))
+        opened = []
+        with (
+            patch("concurrer.pushcsv.open_expense_by_id",
+                  side_effect=lambda _p, _r, eid: opened.append(eid) or eid),
+            patch("concurrer.pushcsv.field_inventory", return_value=fields()),
+            patch("concurrer.pushcsv.build_edit_plan", return_value=object()),
+        ):
+            preflight = preflight_batch(object(), sheet, TEST_REPORT_ID)
+        self.assertEqual(opened, [EXPENSE_A])
+        self.assertFalse(preflight.push.unknown_ids)
+
+
 class DryRunTests(unittest.TestCase):
     def test_clean_dry_run_prints_diff_but_never_persists(self):
         sheet = sheet_for((EXPENSE_A, "after"))
