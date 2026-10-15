@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from decimal import Decimal, InvalidOperation
 import sys
 from dataclasses import asdict, dataclass, field
 from typing import Callable, Mapping
@@ -122,6 +123,19 @@ class EditPlan:
 
 def _norm(text: str) -> str:
     return " ".join((text or "").split()).casefold()
+
+
+#: Money fields Concur re-displays with thousands separators ("10,000").
+_NUMERIC = frozenset({"transactionAmount"})
+
+
+def _same_value(name: str, actual: str, wanted: str) -> bool:
+    if name in _NUMERIC:
+        try:
+            return Decimal(str(actual).replace(",", "")) == Decimal(str(wanted).replace(",", ""))
+        except InvalidOperation:
+            return False
+    return _norm(actual) == _norm(wanted)
 
 
 def parse_assignment(raw: str) -> tuple[str, str]:
@@ -342,7 +356,7 @@ def validate_before_save(fields: list[dict], plan: EditPlan) -> None:
         actual = values.get(name)
         if actual is None:
             problems.append(f"requested field {name!r} disappeared from the live form")
-        elif _norm(actual) != _norm(change["after"]):
+        elif not _same_value(name, actual, change["after"]):
             problems.append(
                 f"requested {name!r} is {actual!r}, expected {change['after']!r}"
             )
@@ -411,7 +425,23 @@ def apply_plan(page, plan: EditPlan, before: list[dict]) -> list[dict]:
             )
         _apply_value(page, field_by_name(current, name), change["after"])
         current = field_inventory(page)
-    return current
+    return _await_currency_recalc(page, current)
+
+
+#: Concur clears these when date/amount change and recomputes them shortly
+#: after (CCED Suica edit, 2026-10-15: checked too early, both read empty).
+_RECALCULATED = ("exchangeRate", "postedAmount")
+
+
+def _await_currency_recalc(page, fields: list[dict], *, max_reads: int = 15) -> list[dict]:
+    for _ in range(max_reads):
+        pending = [f for f in fields if f.get("name") in _RECALCULATED
+                   and not str(f.get("value", "")).strip()]
+        if not pending:
+            return fields
+        page.wait_for_timeout(1000)
+        fields = field_inventory(page)
+    return fields  # validate_before_save reports anything still empty
 
 
 def verify_saved_expense(page, report_id: str, expense_id: str, plan: EditPlan) -> None:

@@ -262,6 +262,23 @@ class EditPlanTests(unittest.TestCase):
             with self.assertRaisesRegex(PlanError, "no helper"):
                 build_edit_plan(request, fields)
 
+    def test_amount_readback_ignores_thousands_separators(self) -> None:
+        from concurrer.edit import _same_value
+        self.assertTrue(_same_value("transactionAmount", "10,000", "10000"))
+        self.assertFalse(_same_value("transactionAmount", "10,001", "10000"))
+        self.assertFalse(_same_value("comment", "10,000", "10000"))
+
+    def test_waits_for_concur_to_recompute_exchange_fields(self) -> None:
+        from concurrer.edit import _await_currency_recalc
+        empty = [form_field("exchangeRate", "Exchange Rate", ""),
+                 form_field("postedAmount", "Amount in USD", "")]
+        filled = [form_field("exchangeRate", "Exchange Rate", "0.0064"),
+                  form_field("postedAmount", "Amount in USD", "64.10")]
+        page = type("P", (), {"waits": [], "wait_for_timeout": lambda self, ms: self.waits.append(ms)})()
+        with patch("concurrer.edit.field_inventory", side_effect=[empty, filled]):
+            self.assertEqual(_await_currency_recalc(page, empty), filled)
+        self.assertEqual(len(page.waits), 2)
+
     def test_known_conditional_requirement_blocks_save(self) -> None:
         fields = ground_transportation_fields(comment="", custom20="Other (Comment Required)")
         request = EditRequest("TEST", "ABCDEF", None, {"custom20": "Other (Comment Required)"})
