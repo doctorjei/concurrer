@@ -216,6 +216,14 @@ class XlsxTests(unittest.TestCase):
                        if "Orig!" in r.formula[0] and r.dxf.fill.fgColor.rgb == "00FF9999")
         self.assertLess(red_new, fills.index("00FFFF99"))
 
+    def test_vendor_column_gets_extra_width(self):
+        write_workbook(self.path, data())
+        ws = load_workbook(self.path)[EXPENSES]
+        headers = [c.value for c in ws[1]]
+        letter = get_column_letter(headers.index("vendor") + 1)
+        values = [ws.cell(r, headers.index("vendor") + 1).value for r in range(2, ws.max_row + 1)]
+        self.assertGreater(ws.column_dimensions[letter].width, fit_width("vendor", values))
+
     def test_untouched_off_list_value_does_not_block_the_batch(self):
         # A freshly exported "Undefined" type is Concur's own state: it is
         # never written, so it must not block an unrelated edit elsewhere.

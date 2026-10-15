@@ -528,11 +528,18 @@ def fit_width(header: str, values: Sequence[str], *, floor: int = 8,
     return max(floor, min(ceiling, math.ceil(max(fit, word) * 1.05) + 2))
 
 
+#: Extra width for columns whose values are mostly upper-case card merchant
+#: names, which render wider than "0"-unit widths assume (operator
+#: 2026-10-15: "vendor column needs to be a touch bigger").
+WIDTH_BONUS = {"vendor": 1.2}
+
+
 def _fit_columns(ws, first_row: int, *, ceiling: int = 60) -> None:
     for col in ws.iter_cols(min_row=first_row):
         header = str(col[0].value or "")
-        ws.column_dimensions[col[0].column_letter].width = fit_width(
-            header, [c.value for c in col[1:]], ceiling=ceiling)
+        width = fit_width(header, [c.value for c in col[1:]], ceiling=ceiling)
+        width = min(ceiling, math.ceil(width * WIDTH_BONUS.get(header, 1)))
+        ws.column_dimensions[col[0].column_letter].width = width
 
 
 def _read_only_banner(ws) -> None:
